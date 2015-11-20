@@ -1,0 +1,18 @@
+# Task execution
+invoke
+
+# Soft dependencies
+python-dateutil
+pytz
+
+# Distribution
+wheel
+twine
+
+# Testing
+pytest==2.8.0
+tox>=1.5.0
+simplejson
+
+# Syntax checking
+flake8==2.4.1

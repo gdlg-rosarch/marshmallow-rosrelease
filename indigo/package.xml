@@ -1,0 +1,25 @@
+<package>
+  <name>python-marshmallow</name>
+  <version>:{version}</version>
+  <description>
+A lightweight library for converting complex objects to and from simple Python datatypes. http://marshmallow.rtfd.org/
+  </description>
+
+  <license>MIT</license>
+
+  <url type="repository">https://github.com/marshmallow-code/marshmallow</url>
+  <url type="bugtracker">https://github.com/marshmallow-code/marshmallow/issues</url>
+
+  <maintainer email="asmodehn@gmail.com">AlexV</maintainer>
+
+  <run_depend>catkin</run_depend>
+  <buildtool_depend>cmake</buildtool_depend>
+
+  <export>
+    <build_type>cmake</build_type>
+  </export>
+
+</package>
+
+
+

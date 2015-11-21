@@ -12,12 +12,7 @@ A lightweight library for converting complex objects to and from simple Python d
 
   <maintainer email="asmodehn@gmail.com">AlexV</maintainer>
 
-  <run_depend>catkin</run_depend>
-  <buildtool_depend>cmake</buildtool_depend>
-
-  <export>
-    <build_type>cmake</build_type>
-  </export>
+  <buildtool_depend>catkin</buildtool_depend>
 
 </package>
 

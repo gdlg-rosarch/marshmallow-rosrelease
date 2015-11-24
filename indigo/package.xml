@@ -1,5 +1,5 @@
 <package>
-  <name>python-marshmallow</name>
+  <name>python_marshmallow</name>
   <version>:{version}</version>
   <description>
 A lightweight library for converting complex objects to and from simple Python datatypes. http://marshmallow.rtfd.org/

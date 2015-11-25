@@ -1,3 +1,24 @@
+## marshmallow (indigo) - 2.2.1-6
+
+The packages in the `marshmallow` repository were released into the `indigo` distro by running `/home/alexv/.virtualenvs/bloom/bin/bloom-release --rosdistro indigo --track indigo marshmallow` on `Wed, 25 Nov 2015 08:23:33 -0000`
+
+The `python_marshmallow` package was released.
+
+Version of package(s) in repository `marshmallow`:
+- upstream repository: https://github.com/marshmallow-code/marshmallow.git
+- release repository: https://github.com/asmodehn/marshmallow-rosrelease.git
+- rosdistro version: `2.2.1-4`
+- old version: `2.2.1-5`
+- new version: `2.2.1-6`
+
+Versions of tools used:
+- bloom version: `0.5.20`
+- catkin_pkg version: `0.2.10`
+- rosdep version: `0.11.4`
+- rosdistro version: `0.4.2`
+- vcstools version: `0.1.38`
+
+
 ## marshmallow (indigo) - 2.2.1-5
 
 The packages in the `marshmallow` repository were released into the `indigo` distro by running `/home/alexv/.virtualenvs/bloom/bin/bloom-release --rosdistro indigo --track indigo marshmallow` on `Wed, 25 Nov 2015 08:05:45 -0000`

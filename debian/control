@@ -1,0 +1,12 @@
+Source: ros-indigo-python-marshmallow
+Section: misc
+Priority: extra
+Maintainer: AlexV <asmodehn@gmail.com>
+Build-Depends: debhelper (>= 9.0.0), python-setuptools, ros-indigo-catkin
+Homepage: 
+Standards-Version: 3.9.2
+
+Package: ros-indigo-python-marshmallow
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, 
+Description: A lightweight library for converting complex objects to and from simple Python datatypes. http://marshmallow.rtfd.org/

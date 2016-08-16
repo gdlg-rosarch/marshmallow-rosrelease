@@ -40,10 +40,12 @@ class URL(Validator):
     :param bool relative: Whether to allow relative URLs.
     :param str error: Error message to raise in case of a validation error.
         Can be interpolated with `{input}`.
+    :param set schemes: Valid schemes. By default, ``http``, ``https``,
+        ``ftp``, and ``ftps`` are allowed.
     """
 
     URL_REGEX = re.compile(
-        r'^(?:http|ftp)s?://'  # http:// or https://
+        r'^(?:[a-z0-9\.\-\+]*)://'  # scheme is validated separately
         r'(?:[^:@]+?:[^:@]*?@|)'  # basic auth
         r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+'
         r'(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'  # domain...
@@ -54,7 +56,7 @@ class URL(Validator):
         r'(?:/?|[/?]\S+)$', re.IGNORECASE)
 
     RELATIVE_URL_REGEX = re.compile(
-        r'^((?:http|ftp)s?://'  # http:// or https://
+        r'^((?:[a-z0-9\.\-\+]*)://'  # scheme is validated separately
         r'(?:[^:@]+?:[^:@]*?@|)'  # basic auth
         r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+'
         r'(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'  # domain...
@@ -65,10 +67,13 @@ class URL(Validator):
         r'(?:/?|[/?]\S+)$', re.IGNORECASE)  # host is optional, allow for relative URLs
 
     default_message = 'Not a valid URL.'
+    default_schemes = set(['http', 'https', 'ftp', 'ftps'])
 
-    def __init__(self, relative=False, error=None):
+    # TODO; Switch position of `error` and `schemes` in 3.0
+    def __init__(self, relative=False, error=None, schemes=None):
         self.relative = relative
         self.error = error or self.default_message
+        self.schemes = schemes or self.default_schemes
 
     def _repr_args(self):
         return 'relative={0!r}'.format(self.relative)
@@ -80,6 +85,12 @@ class URL(Validator):
         message = self._format_error(value)
         if not value:
             raise ValidationError(message)
+
+        # Check first if the scheme is valid
+        if '://' in value:
+            scheme = value.split('://')[0].lower()
+            if scheme not in self.schemes:
+                raise ValidationError(message)
 
         regex = self.RELATIVE_URL_REGEX if self.relative else self.URL_REGEX
 
@@ -196,6 +207,8 @@ class Length(Range):
         will not be checked.
     :param int max: The maximum length. If not provided, maximum length
         will not be checked.
+    :param int equal: The exact length. If provided, maximum and minimum
+        length will not be checked.
     :param str error: Error message to raise in case of a validation error.
         Can be interpolated with `{input}`, `{min}` and `{max}`.
     """
@@ -203,9 +216,32 @@ class Length(Range):
     message_min = 'Shorter than minimum length {min}.'
     message_max = 'Longer than maximum length {max}.'
     message_all = 'Length must be between {min} and {max}.'
+    message_equal = 'Length must be {equal}.'
+
+    def __init__(self, min=None, max=None, error=None, equal=None):
+        if equal is not None and any([min, max]):
+            raise ValueError(
+                'The `equal` parameter was provided, maximum or '
+                'minimum parameter must not be provided.'
+            )
+
+        super(Length, self).__init__(min, max, error)
+        self.equal = equal
+
+    def _repr_args(self):
+        return 'min={0!r}, max={1!r}, equal={2!r}'.format(self.min, self.max, self.equal)
+
+    def _format_error(self, value, message):
+        return (self.error or message).format(input=value, min=self.min, max=self.max,
+                                              equal=self.equal)
 
     def __call__(self, value):
         length = len(value)
+
+        if self.equal is not None:
+            if length != self.equal:
+                raise ValidationError(self._format_error(value, self.message_equal))
+            return value
 
         if self.min is not None and length < self.min:
             message = self.message_min if self.max is None else self.message_all

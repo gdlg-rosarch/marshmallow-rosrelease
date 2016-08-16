@@ -88,8 +88,9 @@ class TestFieldDeserialization:
         m1 = 12
         m2 = '12.355'
         m3 = decimal.Decimal(1)
-        m4 = 'abc'
-        m5 = [1, 2]
+        m4 = 3.14
+        m5 = 'abc'
+        m6 = [1, 2]
 
         field = fields.Decimal()
         assert isinstance(field.deserialize(m1), decimal.Decimal)
@@ -98,11 +99,13 @@ class TestFieldDeserialization:
         assert field.deserialize(m2) == decimal.Decimal('12.355')
         assert isinstance(field.deserialize(m3), decimal.Decimal)
         assert field.deserialize(m3) == decimal.Decimal(1)
-        with pytest.raises(ValidationError) as excinfo:
-            field.deserialize(m4)
-        assert excinfo.value.args[0] == 'Not a valid number.'
+        assert isinstance(field.deserialize(m4), decimal.Decimal)
+        assert field.deserialize(m4).as_tuple() == (0, (3, 1, 4), -2)
         with pytest.raises(ValidationError) as excinfo:
             field.deserialize(m5)
+        assert excinfo.value.args[0] == 'Not a valid number.'
+        with pytest.raises(ValidationError) as excinfo:
+            field.deserialize(m6)
         assert excinfo.value.args[0] == 'Not a valid number.'
 
     def test_decimal_field_with_places(self):
@@ -493,6 +496,16 @@ class TestFieldDeserialization:
                                 deserialize=lambda val: val.upper())
         assert field.deserialize('foo') == 'FOO'
 
+    def test_function_field_deserialization_with_context(self):
+        class Parent(Schema):
+            pass
+        field = fields.Function(
+            lambda x: None,
+            deserialize=lambda val, context: val.upper() + context['key']
+        )
+        field.parent = Parent(context={'key': 'BAR'})
+        assert field.deserialize('foo') == 'FOOBAR'
+
     def test_uuid_field_deserialization(self):
         field = fields.UUID()
         uuid_str = str(uuid.uuid4())
@@ -549,6 +562,16 @@ class TestFieldDeserialization:
         with pytest.raises(ValueError):
             s.fields['uppername'].deserialize('STEVE')
 
+    def test_method_field_deserialize_only(self):
+        class MethodDeserializeOnly(Schema):
+            def lowercase_name(self, value):
+                return value.lower()
+
+        m = fields.Method(deserialize='lowercase_name')
+        m.parent = MethodDeserializeOnly()
+
+        assert m.deserialize('ALEC') == 'alec'
+
     def test_datetime_list_field_deserialization(self):
         dtimes = dt.datetime.now(), dt.datetime.now(), dt.datetime.utcnow()
         dstrings = [each.isoformat() for each in dtimes]
@@ -562,12 +585,24 @@ class TestFieldDeserialization:
         field = fields.List(fields.DateTime)
         with pytest.raises(ValidationError) as excinfo:
             field.deserialize(['badvalue'])
-        assert excinfo.value.args[0] == 'Not a valid datetime.'
+        assert excinfo.value.args[0] == {0: ['Not a valid datetime.']}
 
         field = fields.List(fields.Str())
         with pytest.raises(ValidationError) as excinfo:
             field.deserialize(['good', 42])
-        assert excinfo.value.args[0] == 'Not a valid string.'
+        assert excinfo.value.args[0] == {1: ['Not a valid string.']}
+
+    def test_list_field_deserialize_multiple_invalid_items(self):
+        field = fields.List(
+            fields.Int(
+                validate=validate.Range(10, 20, error='Value {input} not in range')
+            )
+        )
+        with pytest.raises(ValidationError) as excinfo:
+            field.deserialize([10, 5, 25])
+        assert len(excinfo.value.args[0]) == 2
+        assert excinfo.value.args[0][1] == ['Value 5 not in range']
+        assert excinfo.value.args[0][2] == ['Value 25 not in range']
 
     @pytest.mark.parametrize('value',
     [
@@ -1045,6 +1080,45 @@ class TestSchemaDeserialization:
 
         assert data['foo'] == 3
         assert 'bar' not in data
+        assert not errors
+
+    def test_partial_fields_deserialization(self):
+        class MySchema(Schema):
+            foo = fields.Field(required=True)
+            bar = fields.Field(required=True)
+            baz = fields.Field(required=True)
+
+        data, errors = MySchema().load({'foo': 3}, partial=tuple())
+        assert data['foo'] == 3
+        assert 'bar' in errors
+        assert 'baz' in errors
+
+        data, errors = MySchema().load({'foo': 3}, partial=('bar', 'baz'))
+        assert data['foo'] == 3
+        assert 'bar' not in data
+        assert 'baz' not in data
+        assert not errors
+
+        data, errors = MySchema(partial=True).load({'foo': 3}, partial=('bar', 'baz'))
+        assert data['foo'] == 3
+        assert 'bar' not in data
+        assert 'baz' not in data
+        assert not errors
+
+    def test_partial_fields_validation(self):
+        class MySchema(Schema):
+            foo = fields.Field(required=True)
+            bar = fields.Field(required=True)
+            baz = fields.Field(required=True)
+
+        errors = MySchema().validate({'foo': 3}, partial=tuple())
+        assert 'bar' in errors
+        assert 'baz' in errors
+
+        errors = MySchema().validate({'foo': 3}, partial=('bar', 'baz'))
+        assert not errors
+
+        errors = MySchema(partial=True).validate({'foo': 3}, partial=('bar', 'baz'))
         assert not errors
 
 validators_gen = (func for func in [lambda x: x <= 24, lambda x: 18 <= x])

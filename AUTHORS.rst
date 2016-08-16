@@ -53,3 +53,17 @@ Contributors (chronological)
 - Francisco Demartino `@franciscod <https://github.com/franciscod>`_
 - Eric Wang `@ewang <https://github.com/ewang>`_
 - Eugene Prikazchikov `@eprikazc <https://github.com/eprikazc>`_
+- Damian Heard `@DamianHeard <https://github.com/DamianHeard>`_
+- Alec Reiter `@justanr <https://github.com/justanr>`_
+- Dan Sutherland `@d-sutherland <https://github.com/d-sutherland>`_
+- Jeff Widman `@jeffwidman <https://github.com/jeffwidman>`_
+- Simeon Visser `@svisser <https://github.com/svisser>`_
+- Taylan Develioglu `@tdevelioglu <https://github.com/tdevelioglu>`_
+- Danilo Akamine `@daniloakamine <https://github.com/daniloakamine>`_
+- Maxim Kulkin `@maximkulkin <https://github.com/maximkulkin>`_
+- `@immerrr <https://github.com/immerrr>`_
+- Mike Yumatov `@yumike <https://github.com/yumike>`_
+- Tim Mundt `@Tim-Erwin <https://github.com/Tim-Erwin>`_
+- Russell Davies `@russelldavies <https://github.com/russelldavies>`_
+- David Thornton `@davidthornton <https://github.com/davidthornton>`_
+- Vuong Hoang `@vuonghv <https://github.com/vuonghv>`_

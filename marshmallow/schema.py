@@ -8,7 +8,6 @@ import datetime as dt
 import decimal
 import inspect
 import json
-import types
 import uuid
 import warnings
 from collections import namedtuple
@@ -21,6 +20,7 @@ from marshmallow.exceptions import ValidationError
 from marshmallow.orderedset import OrderedSet
 from marshmallow.decorators import (PRE_DUMP, POST_DUMP, PRE_LOAD, POST_LOAD,
                                     VALIDATES, VALIDATES_SCHEMA)
+from marshmallow.utils import missing
 
 
 #: Return type of :meth:`Schema.dump` including serialized data and errors
@@ -135,7 +135,8 @@ class SchemaMeta(type):
     # NOTE: self is the class object
     def __init__(self, name, bases, attrs):
         super(SchemaMeta, self).__init__(name, bases, attrs)
-        class_registry.register(name, self)
+        if name:
+            class_registry.register(name, self)
         self._resolve_processors()
 
     def _resolve_processors(self):
@@ -237,9 +238,9 @@ class BaseSchema(base.SchemaABC):
 
     :param dict extra: A dict of extra attributes to bind to the serialized result.
     :param tuple only: A list or tuple of fields to serialize. If `None`, all
-        fields will be serialized.
+        fields will be serialized. Nested fields can be represented with dot delimiters.
     :param tuple exclude: A list or tuple of fields to exclude from the
-        serialized result.
+        serialized result. Nested fields can be represented with dot delimiters.
     :param str prefix: Optional prefix that will be prepended to all the
         serialized field names.
     :param bool strict: If `True`, raise errors if invalid data are passed in
@@ -251,7 +252,9 @@ class BaseSchema(base.SchemaABC):
     :param tuple load_only: A list or tuple of fields to skip during serialization
     :param tuple dump_only: A list or tuple of fields to skip during
         deserialization, read-only fields
-    :param bool partial: If `True`, ignore missing fields when deserializing.
+    :param bool|tuple partial: Whether to ignore missing fields. If its value
+        is an iterable, only missing fields listed in that iterable will be
+        ignored.
 
     .. versionchanged:: 2.0.0
         `__validators__`, `__preprocessors__`, and `__data_handlers__` are removed in favor of
@@ -304,6 +307,7 @@ class BaseSchema(base.SchemaABC):
             use this option, e.g., if your fields are Python keywords. May be an
             `OrderedDict`.
         - ``exclude``: Tuple or list of fields to exclude in the serialized result.
+            Nested fields can be represented with dot delimiters.
         - ``dateformat``: Date format for all DateTime fields that do not have their
             date format explicitly specified.
         - ``strict``: If `True`, raise errors during marshalling rather than
@@ -350,6 +354,7 @@ class BaseSchema(base.SchemaABC):
             )
         self.extra = extra
         self.context = context or {}
+        self._normalize_nested_options()
         self._update_fields(many=many)
 
     def __repr__(self):
@@ -472,7 +477,7 @@ class BaseSchema(base.SchemaABC):
                             'many=True to serialize a collection.',
                             category=DeprecationWarning)
 
-        if isinstance(obj, types.GeneratorType):
+        if many and utils.is_iterable_but_not_string(obj):
             obj = list(obj)
 
         processed_obj = self._invoke_dump_processors(PRE_DUMP, obj, many, original_data=obj)
@@ -529,8 +534,9 @@ class BaseSchema(base.SchemaABC):
         :param dict data: The data to deserialize.
         :param bool many: Whether to deserialize `data` as a collection. If `None`, the
             value for `self.many` is used.
-        :param bool partial: Whether to ignore missing fields. If `None`, the
-            value for `self.partial` is used.
+        :param bool|tuple partial: Whether to ignore missing fields. If `None`,
+            the value for `self.partial` is used. If its value is an iterable,
+            only missing fields listed in that iterable will be ignored.
         :return: A tuple of the form (``data``, ``errors``)
         :rtype: `UnmarshalResult`, a `collections.namedtuple`
 
@@ -545,8 +551,8 @@ class BaseSchema(base.SchemaABC):
         :param str json_data: A JSON string of the data to deserialize.
         :param bool many: Whether to deserialize `obj` as a collection. If `None`, the
             value for `self.many` is used.
-        :param bool partial: Whether to ignore missing fields. If `None`, the
-            value for `self.partial` is used.
+        :param bool|tuple partial: Whether to ignore missing fields. If `None`,
+            the value for `self.partial` is used. If its value is an iterable,
         :return: A tuple of the form (``data``, ``errors``)
         :rtype: `UnmarshalResult`, a `collections.namedtuple`
 
@@ -560,7 +566,7 @@ class BaseSchema(base.SchemaABC):
         data = self.opts.json_module.loads(json_data, *args, **kwargs)
         return self.load(data, many=many, partial=partial)
 
-    def validate(self, data, many=None):
+    def validate(self, data, many=None, partial=None):
         """Validate `data` against the schema, returning a dictionary of
         validation errors.
 
@@ -572,7 +578,7 @@ class BaseSchema(base.SchemaABC):
 
         .. versionadded:: 1.1.0
         """
-        _, errors = self._do_load(data, many, postprocess=False)
+        _, errors = self._do_load(data, many, partial=partial, postprocess=False)
         return errors
 
     ##### Private Helpers #####
@@ -584,13 +590,16 @@ class BaseSchema(base.SchemaABC):
         :param data: The data to deserialize.
         :param bool many: Whether to deserialize `data` as a collection. If `None`, the
             value for `self.many` is used.
-        :param bool partial: Whether to ignore missing fields. If `None`, the
-            value for `self.partial` is used.
+        :param bool|tuple partial: Whether to validate required fields. If its value is an iterable,
+            only fields listed in that iterable will be ignored will be allowed missing.
+            If `True`, all fields will be allowed missing.
+            If `None`, the value for `self.partial` is used.
         :param bool postprocess: Whether to run post_load methods..
         :return: A tuple of the form (`data`, `errors`)
         """
         many = self.many if many is None else bool(many)
-        partial = self.partial if partial is None else bool(partial)
+        if partial is None:
+            partial = self.partial
 
         processed_data = self._invoke_load_processors(PRE_LOAD, data, many, original_data=data)
 
@@ -609,13 +618,16 @@ class BaseSchema(base.SchemaABC):
             errors = {}
         self._invoke_field_validators(data=result, many=many)
         errors = self._unmarshal.errors
+        field_errors = bool(errors)
         # Run schema-level migration
         try:
-            self._invoke_validators(pass_many=True, data=result, original_data=data, many=many)
+            self._invoke_validators(pass_many=True, data=result, original_data=data, many=many,
+                                    field_errors=field_errors)
         except ValidationError as err:
             errors.update(err.messages)
         try:
-            self._invoke_validators(pass_many=False, data=result, original_data=data, many=many)
+            self._invoke_validators(pass_many=False, data=result, original_data=data, many=many,
+                                    field_errors=field_errors)
         except ValidationError as err:
             errors.update(err.messages)
         if errors:
@@ -626,7 +638,8 @@ class BaseSchema(base.SchemaABC):
                 errors,
                 field_names=self._unmarshal.error_field_names,
                 fields=self._unmarshal.error_fields,
-                data=data
+                data=data,
+                **self._unmarshal.error_kwargs
             )
             self.handle_error(exc, data)
             if self.strict:
@@ -636,6 +649,39 @@ class BaseSchema(base.SchemaABC):
             result = self._invoke_load_processors(POST_LOAD, result, many, original_data=data)
 
         return result, errors
+
+    def _normalize_nested_options(self):
+        """Apply then flatten nested schema options"""
+        if self.only:
+            # Apply the only option to nested fields.
+            self.__apply_nested_option('only', self.only)
+            # Remove the child field names from the only option.
+            self.only = self.set_class(
+                [field.split('.', 1)[0] for field in self.only])
+        excludes = set(self.opts.exclude) | set(self.exclude)
+        if excludes:
+            # Apply the exclude option to nested fields.
+            self.__apply_nested_option('exclude', excludes)
+        if self.exclude:
+            # Remove the parent field names from the exclude option.
+            self.exclude = self.set_class(
+                [field for field in self.exclude if '.' not in field])
+        if self.opts.exclude:
+            # Remove the parent field names from the meta exclude option.
+            self.opts.exclude = self.set_class(
+                [field for field in self.opts.exclude if '.' not in field])
+
+    def __apply_nested_option(self, option_name, field_names):
+        """Apply nested options to nested fields"""
+        # Split nested field names on the first dot.
+        nested_fields = [name.split('.', 1) for name in field_names if '.' in name]
+        # Partition the nested field names by parent field.
+        nested_options = defaultdict(list)
+        for parent, nested_names in nested_fields:
+            nested_options[parent].append(nested_names)
+        # Apply the nested field options.
+        for key, options in iter(nested_options.items()):
+            setattr(self.declared_fields[key], option_name, self.set_class(options))
 
     def _update_fields(self, obj=None, many=False):
         """Update fields based on the passed in object."""
@@ -682,8 +728,8 @@ class BaseSchema(base.SchemaABC):
                     field_obj.load_only = True
                 if field_name in self.dump_only:
                     field_obj.dump_only = True
-                self.on_bind_field(field_name, field_obj)
                 field_obj._add_to_schema(field_name, self)
+                self.on_bind_field(field_name, field_obj)
             except TypeError:
                 # field declared as a class, not an instance
                 if (isinstance(field_obj, type) and
@@ -773,36 +819,45 @@ class BaseSchema(base.SchemaABC):
             if many:
                 for idx, item in enumerate(data):
                     try:
-                        value = item[field_name]
+                        value = item[field_obj.attribute or field_name]
                     except KeyError:
                         pass
                     else:
-                        self._unmarshal.call_and_store(
+                        validated_value = self._unmarshal.call_and_store(
                             getter_func=validator,
                             data=value,
                             field_name=field_name,
                             field_obj=field_obj,
                             index=(idx if self.opts.index_errors else None)
                         )
+                        if validated_value is missing:
+                            data[idx].pop(field_name, None)
             else:
                 try:
-                    value = data[field_name]
+                    value = data[field_obj.attribute or field_name]
                 except KeyError:
                     pass
                 else:
-                    self._unmarshal.call_and_store(
+                    validated_value = self._unmarshal.call_and_store(
                         getter_func=validator,
                         data=value,
                         field_name=field_name,
                         field_obj=field_obj
                     )
+                    if validated_value is missing:
+                        data.pop(field_name, None)
 
-    def _invoke_validators(self, pass_many, data, original_data, many):
+    def _invoke_validators(self, pass_many, data, original_data, many, field_errors=False):
         errors = {}
         for attr_name in self.__processors__[(VALIDATES_SCHEMA, pass_many)]:
             validator = getattr(self, attr_name)
             validator_kwargs = validator.__marshmallow_kwargs__[(VALIDATES_SCHEMA, pass_many)]
             pass_original = validator_kwargs.get('pass_original', False)
+
+            skip_on_field_errors = validator_kwargs['skip_on_field_errors']
+            if skip_on_field_errors and field_errors:
+                continue
+
             if pass_many:
                 validator = functools.partial(validator, many=many)
             if many and not pass_many:

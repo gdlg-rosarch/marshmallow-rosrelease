@@ -7,6 +7,44 @@ Upgrading to Newer Releases
 
 This section documents migration paths to new releases.
 
+Upgrading to 2.3
+++++++++++++++++
+
+The ``func`` parameter of `fields.Function <marshmallow.fields.Function>` was renamed to ``serialize``.
+
+
+.. code-block:: python
+
+    # YES
+    lowername = fields.Function(serialize=lambda obj: obj.name.lower())
+    # or
+    lowername = fields.Function(lambda obj: obj.name.lower())
+
+    # NO
+    lowername = fields.Function(func=lambda obj: obj.name.lower())
+
+Similiarly, the ``method_name`` of `fields.Method <marshmallow.fields.Method>` was also renamed to ``serialize``.
+
+.. code-block:: python
+
+    # YES
+    lowername = fields.Method(serialize='lowercase')
+    # or
+    lowername = fields.Method('lowercase')
+
+    # NO
+    lowername = fields.Method(method_name='lowercase')
+
+The ``func`` parameter is still available for backwards-compatibility. It will be removed in marshmallow 3.0.
+
+Both `fields.Function <marshmallow.fields.Function>` and `fields.Method <marshmallow.fields.Method>` will allow the serialize parameter to not be passed, in this case use the ``deserialize`` parameter by name.
+
+.. code-block:: python
+
+    lowername = fields.Function(deserialize=lambda name: name.lower())
+    # or
+    lowername = fields.Method(deserialize='lowername')
+
 Upgrading to 2.0
 ++++++++++++++++
 

@@ -236,6 +236,34 @@ class ValidatesSchema(Schema):
 
 class TestValidatesDecorator:
 
+    def test_validates_and_strict(self):
+        class VSchema(Schema):
+            s = fields.String()
+
+            @validates('s')
+            def validate_string(self, data):
+                raise ValidationError('nope')
+
+        with pytest.raises(ValidationError) as excinfo:
+            VSchema(strict=True).load({'s': 'bar'})
+
+        assert excinfo.value.messages == {'s': ['nope']}
+
+    # Regression test for https://github.com/marshmallow-code/marshmallow/issues/350
+    def test_validates_with_attribute_and_strict(self):
+        class S1(Schema):
+            s = fields.String(attribute='string_name')
+
+            @validates('s')
+            def validate_string(self, data):
+                raise ValidationError('nope')
+        with pytest.raises(ValidationError) as excinfo:
+            S1(strict=True).load({'s': 'foo'})
+        assert excinfo.value.messages == {'s': ['nope']}
+
+        with pytest.raises(ValidationError):
+            S1(strict=True, many=True).load([{'s': 'foo'}])
+
     def test_validates_decorator(self):
         schema = ValidatesSchema()
 
@@ -256,6 +284,18 @@ class TestValidatesDecorator:
 
         errors = schema.validate({})
         assert errors == {}
+
+        result, errors = schema.load({'foo': 41})
+        assert errors
+        assert result == {}
+
+        result, errors = schema.load([{'foo': 42}, {'foo': 43}], many=True)
+        assert len(result) == 2
+        assert result[0] == {'foo': 42}
+        assert result[1] == {}
+        assert 1 in errors
+        assert 'foo' in errors[1]
+        assert errors[1]['foo'] == ['The answer to life the universe and everything.']
 
     def test_field_not_present(self):
         class BadSchema(ValidatesSchema):
@@ -298,6 +338,26 @@ class TestValidatesDecorator:
 
 
 class TestValidatesSchemaDecorator:
+
+    def test_validator_nested_many(self):
+
+        class NestedSchema(Schema):
+            foo = fields.Int(required=True)
+
+            @validates_schema
+            def validate_schema(self, data):
+                raise ValidationError('This will never work', 'foo')
+
+        class MySchema(Schema):
+            nested = fields.Nested(NestedSchema, required=True, many=True)
+
+        schema = MySchema()
+        errors = schema.validate({'nested': [1]})
+        assert errors
+        assert 'nested' in errors
+        assert 0 in errors['nested']
+        assert '_schema' in errors['nested']
+        assert 'foo' not in errors['nested']
 
     def test_decorated_validators(self):
 
@@ -429,3 +489,44 @@ class TestValidatesSchemaDecorator:
         assert 'baz' in errors
         assert len(errors['baz']) == 1
         assert errors['baz'][0] == 'Unknown field name'
+
+    def test_skip_on_field_errors(self):
+
+        class MySchema(Schema):
+            foo = fields.Int(required=True, validate=lambda n: n == 3)
+            bar = fields.Int(required=True)
+
+            @validates_schema(skip_on_field_errors=True)
+            def validate_schema(self, data):
+                if data['foo'] != data['bar']:
+                    raise ValidationError('Foo and bar must be equal.')
+
+            @validates_schema(skip_on_field_errors=True, pass_many=True)
+            def validate_many(self, data, many):
+                if many:
+                    assert type(data) is list
+                    if len(data) < 2:
+                        raise ValidationError('Must provide at least 2 items')
+
+        schema = MySchema()
+        # check that schema errors still occur with no field errors
+        errors = schema.validate({'foo': 3, 'bar': 4})
+        assert '_schema' in errors
+        assert errors['_schema'][0] == 'Foo and bar must be equal.'
+
+        errors = schema.validate([{'foo': 3, 'bar': 3}], many=True)
+        assert '_schema' in errors
+        assert errors['_schema'][0] == 'Must provide at least 2 items'
+
+        # check that schema errors don't occur when field errors do
+        errors = schema.validate({'foo': 3, 'bar': 'not an int'})
+        assert 'bar' in errors
+        assert '_schema' not in errors
+
+        errors = schema.validate({'foo': 2, 'bar': 2})
+        assert 'foo' in errors
+        assert '_schema' not in errors
+
+        errors = schema.validate([{'foo': 3, 'bar': 'not an int'}], many=True)
+        assert 'bar' in errors[0]
+        assert '_schema' not in errors

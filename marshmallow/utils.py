@@ -50,8 +50,7 @@ def is_generator(obj):
 def is_iterable_but_not_string(obj):
     """Return True if ``obj`` is an iterable object that isn't a string."""
     return (
-        (isinstance(obj, collections.Iterable) and not hasattr(obj, "strip"))
-        or is_generator(obj)
+        (isinstance(obj, collections.Iterable) and not hasattr(obj, "strip")) or is_generator(obj)
     )
 
 
@@ -301,7 +300,7 @@ def pluck(dictlist, key):
 
 def get_value(key, obj, default=missing):
     """Helper for pulling a keyed value off various types of objects"""
-    if type(key) == int:
+    if isinstance(key, int):
         return _get_value_for_key(key, obj, default)
     else:
         return _get_value_for_keys(key.split('.'), obj, default)

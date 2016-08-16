@@ -41,7 +41,7 @@ primary_domain = 'py'
 default_role = 'py:obj'
 
 intersphinx_mapping = {
-    'python': ('http://python.readthedocs.org/en/latest/', None),
+    'python': ('http://python.readthedocs.io/en/latest/', None),
 }
 
 issues_github_path = 'marshmallow-code/marshmallow'
@@ -79,6 +79,7 @@ html_theme_options = {
     'github_user': 'marshmallow-code',
     'github_repo': 'marshmallow',
     'github_banner': True,
+    'github_type': 'star',
     'gratipay_user': 'sloria',
     'code_font_size': '0.8em',
     'warn_bg': '#FFC',

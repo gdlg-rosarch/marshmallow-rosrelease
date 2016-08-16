@@ -229,7 +229,7 @@ Normally, unspecified field names are ignored by the validator. If you would lik
         @validates_schema(pass_original=True)
         def check_unknown_fields(self, data, original_data):
             for key in original_data:
-                if key not in schema.fields:
+                if key not in self.fields:
                     raise ValidationError('Unknown field name {}'.format(key))
 
     schema = MySchema()
@@ -280,8 +280,6 @@ However, if you want to specify how values are accessed from an object, you can 
         def get_attribute(self, key, obj, default):
             return obj.get(key, default)
 
-        class Meta:
-            accessor = get_from_dict
 
 
 Custom "class Meta" Options

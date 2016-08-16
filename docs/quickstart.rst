@@ -174,7 +174,7 @@ Validation
     result.errors  # => {'email': ['"foo" is not a valid email address.']}
 
 
-When validating a collection, the errors dictionary will be keyed on the indicies of invalid items.
+When validating a collection, the errors dictionary will be keyed on the indices of invalid items.
 
 .. code-block:: python
 
@@ -285,16 +285,20 @@ Required Fields
 
 You can make a field required by passing ``required=True``. An error will be stored if the the value is missing from the input to :meth:`Schema.load`.
 
-Alternatively, you can provide a custom error message by passing ``required='My custom message'``.
-Dictionaries or lists are also accepted as the custom error message, in case you want to provide more information with the error.
+To customize the error message for required fields, pass a `dict` with a ``required`` key as the ``error_messages`` argument for the field.
 
 .. code-block:: python
-    :emphasize-lines: 2,3,4
 
     class UserSchema(Schema):
         name = fields.String(required=True)
-        age = fields.Integer(required='Age is required.')
-        city = fields.String(required={'message': 'City required', 'code': 400})
+        age = fields.Integer(
+            required=True,
+            error_messages={'required': 'Age is required.'}
+        )
+        city = fields.String(
+            required=True,
+            error_messages={'required': {'message': 'City required', 'code': 400}}
+        )
         email = fields.Email()
 
     data, errors = UserSchema().load({'email': 'foo@bar.com'})
@@ -306,7 +310,20 @@ Dictionaries or lists are also accepted as the custom error message, in case you
 Partial Loading
 +++++++++++++++
 
-When using the same schema in multiple places, you may only want to check required fields some of the time when deserializing. You can ignore missing fields entirely by setting ``partial=True``.
+When using the same schema in multiple places, you may only want to check required fields some of the time when deserializing by specifying them in ``partial``.
+
+.. code-block:: python
+    :emphasize-lines: 5,6
+
+    class UserSchema(Schema):
+        name = fields.String(required=True)
+        age = fields.Integer(required=True)
+
+    data, errors = UserSchema().load({'age': 42}, partial=('name',))
+    # OR UserSchema(partial=('name',)).load({'age': 42})
+    data, errors  # => ({'age': 42}, {})
+
+Or you can ignore missing fields entirely by setting ``partial=True``.
 
 .. code-block:: python
     :emphasize-lines: 5,6
@@ -374,6 +391,29 @@ By default `Schemas` will unmarshal an input dictionary to an output dictionary 
     # 'email': 'foo@bar.com'}
 
 .. _meta_options:
+
+
+Specifying Serialization Keys
+-------------------------------
+
+If you want to marshal a field to a different key than the field name you can use `dump_to`, which is analogous to `load_from`.
+
+.. code-block:: python
+    :emphasize-lines: 2,3,11,12
+
+    class UserSchema(Schema):
+        name = fields.String(dump_to='TheName')
+        email = fields.Email(load_from='CamelCasedEmail', dump_to='CamelCasedEmail')
+
+    data = {
+        'name': 'Mike',
+        'CamelCasedEmail': 'foo@bar.com'
+    }
+    s = UserSchema()
+    result, errors = s.dump(data)
+    #{'TheName': u'Mike',
+    # 'CamelCasedEmail': 'foo@bar.com'}
+
 
 Refactoring: Implicit Field Creation
 ------------------------------------

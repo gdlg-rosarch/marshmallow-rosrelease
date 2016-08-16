@@ -81,6 +81,26 @@ def test_url_relative_invalid(invalid_url):
     with pytest.raises(ValidationError):
         validator(invalid_url)
 
+def test_url_custom_scheme():
+    validator = validate.URL()
+    # By default, ws not allowed
+    url = 'ws://test.test'
+    with pytest.raises(ValidationError):
+        validator(url)
+
+    validator = validate.URL(schemes=set(['http', 'https', 'ws']))
+    assert validator(url) == url
+
+def test_url_relative_and_custom_schemes():
+    validator = validate.URL(relative=True)
+    # By default, ws not allowed
+    url = 'ws://test.test'
+    with pytest.raises(ValidationError):
+        validator(url)
+
+    validator = validate.URL(relative=True, schemes=set(['http', 'https', 'ws']))
+    assert validator(url) == url
+
 def test_url_custom_message():
     validator = validate.URL(error="{input} ain't an URL")
     with pytest.raises(ValidationError) as excinfo:
@@ -244,6 +264,24 @@ def test_length_max():
     with pytest.raises(ValidationError):
         validate.Length(None, 2)([1, 2, 3])
 
+def test_length_equal():
+    assert validate.Length(equal=3)('foo') == 'foo'
+    assert validate.Length(equal=3)([1, 2, 3]) == [1, 2, 3]
+    assert validate.Length(equal=None)('') == ''
+    assert validate.Length(equal=None)([]) == []
+
+    with pytest.raises(ValidationError):
+        validate.Length(equal=2)('foo')
+    with pytest.raises(ValidationError):
+        validate.Length(equal=2)([1, 2, 3])
+
+    with pytest.raises(ValueError):
+        validate.Length(1, None, equal=3)('foo')
+    with pytest.raises(ValueError):
+        validate.Length(None, 5, equal=3)('foo')
+    with pytest.raises(ValueError):
+        validate.Length(1, 5, equal=3)('foo')
+
 def test_length_custom_message():
     v = validate.Length(5, 6, error='{input} is not between {min} and {max}')
     with pytest.raises(ValidationError) as excinfo:
@@ -260,14 +298,24 @@ def test_length_custom_message():
         v('foo')
     assert 'foo is longer than 2' in str(excinfo)
 
+    v = validate.Length(None, None, equal=4, error='{input} does not have {equal}')
+    with pytest.raises(ValidationError) as excinfo:
+        v('foo')
+    assert 'foo does not have 4' in str(excinfo)
+
 def test_length_repr():
     assert (
-        repr(validate.Length(min=None, max=None, error=None)) ==
-        '<Length(min=None, max=None, error=None)>'
+        repr(validate.Length(min=None, max=None, error=None, equal=None)) ==
+        '<Length(min=None, max=None, equal=None, error=None)>'
     )
     assert (
-        repr(validate.Length(min=1, max=3, error='foo')) ==
-        '<Length(min=1, max=3, error={0!r})>'
+        repr(validate.Length(min=1, max=3, error='foo', equal=None)) ==
+        '<Length(min=1, max=3, equal=None, error={0!r})>'
+        .format('foo')
+    )
+    assert (
+        repr(validate.Length(min=None, max=None, error='foo', equal=5)) ==
+        '<Length(min=None, max=None, equal=5, error={0!r})>'
         .format('foo')
     )
 

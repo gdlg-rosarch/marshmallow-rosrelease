@@ -2,6 +2,7 @@
 """Tests for field serialization."""
 from collections import namedtuple
 import datetime as dt
+import itertools
 import decimal
 
 import pytest
@@ -9,8 +10,9 @@ import pytest
 from marshmallow import Schema, fields, utils
 from marshmallow.exceptions import ValidationError
 from marshmallow.compat import basestring, OrderedDict
+from marshmallow.utils import missing as missing_
 
-from tests.base import User, DummyModel, ALL_FIELDS
+from tests.base import User, ALL_FIELDS
 
 class DateTimeList:
     def __init__(self, dtimes):
@@ -55,9 +57,25 @@ class TestFieldSerialization:
         field = fields.Field(default=lambda: 'nan')
         assert field.serialize('age', {}) == 'nan'
 
-    def test_function_field(self, user):
+    def test_function_field_passed_func(self, user):
         field = fields.Function(lambda obj: obj.name.upper())
         assert "FOO" == field.serialize("key", user)
+
+    def test_function_field_passed_serialize(self, user):
+        field = fields.Function(serialize=lambda obj: obj.name.upper())
+        assert "FOO" == field.serialize("key", user)
+
+    def test_function_field_passed_func_is_deprecated(self):
+        pytest.deprecated_call(lambda: fields.Function(func=lambda obj: obj.name.upper()))
+
+    def test_function_field_passed_serialize_with_context(self, user, monkeypatch):
+        class Parent(Schema):
+            pass
+        field = fields.Function(
+            serialize=lambda obj, context: obj.name.upper() + context['key']
+        )
+        field.parent = Parent(context={'key': 'BAR'})
+        assert "FOOBAR" == field.serialize("key", user)
 
     def test_function_field_passed_uncallable_object(self):
         with pytest.raises(ValueError):
@@ -322,6 +340,48 @@ class TestFieldSerialization:
         with pytest.raises(ValueError):
             BadSerializer().dump(u)
 
+    def test_method_prefers_serialize_over_method_name(self):
+        m = fields.Method(serialize='serialize', method_name='method')
+        assert m.serialize_method_name == 'serialize'
+
+    def test_method_with_no_serialize_is_missing(self):
+        m = fields.Method()
+        m.parent = Schema()
+
+        assert m.serialize('', '', '') is missing_
+
+    def test_serialize_with_dump_to_param(self):
+        class DumpToSchema(Schema):
+            name = fields.String(dump_to='NamE')
+            years = fields.Integer(dump_to='YearS')
+        data = {
+            'name': 'Richard',
+            'years': 11
+        }
+        result, errors = DumpToSchema().dump(data)
+        assert result == {
+            'NamE': 'Richard',
+            'YearS': 11
+        }
+
+    def test_serialize_with_attribute_and_dump_to_uses_dump_to(self):
+        class ConfusedDumpToAndAttributeSerializer(Schema):
+            name = fields.String(dump_to="FullName")
+            username = fields.String(attribute='uname', dump_to='UserName')
+            years = fields.Integer(attribute='le_wild_age', dump_to='Years')
+        data = {
+            'name': 'Mick',
+            'uname': 'mick_the_awesome',
+            'le_wild_age': 999
+        }
+        result, errors = ConfusedDumpToAndAttributeSerializer().dump(data)
+
+        assert result == {
+            'FullName': 'Mick',
+            'UserName': 'mick_the_awesome',
+            'Years': 999,
+        }
+
     def test_datetime_serializes_to_iso_by_default(self, user):
         field = fields.DateTime()  # No format specified
         expected = utils.isoformat(user.created, localtime=False)
@@ -381,13 +441,20 @@ class TestFieldSerialization:
         user = User(name='Monty')
         assert field.serialize('name', user) == 'Hello Monty'
 
+    # Regression test for https://github.com/marshmallow-code/marshmallow/issues/348
+    def test_formattedstring_field_on_schema(self):
+        class MySchema(Schema):
+            greeting = fields.FormattedString('Hello {name}')
+        user = User(name='Monty')
+        assert MySchema().dump(user).data['greeting'] == 'Hello Monty'
+
     def test_string_field_default_to_empty_string(self, user):
         field = fields.String(default='')
         assert field.serialize("notfound", {}) == ''
 
     def test_time_field(self, user):
         field = fields.Time()
-        expected = user.time_registered.isoformat()[:12]
+        expected = user.time_registered.isoformat()[:15]
         assert field.serialize('time_registered', user) == expected
 
         user.time_registered = None
@@ -646,3 +713,14 @@ def test_serializing_named_tuple_with_meta():
     serialized = PointSerializer().dump(p)
     assert serialized.data['x'] == 4
     assert serialized.data['y'] == 2
+
+
+def test_serializing_slice():
+    values = [{'value': value} for value in range(5)]
+    slice = itertools.islice(values, None)
+
+    class ValueSchema(Schema):
+        value = fields.Int()
+
+    serialized = ValueSchema(many=True).dump(slice).data
+    assert serialized == values

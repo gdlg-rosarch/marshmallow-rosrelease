@@ -303,10 +303,29 @@ def test_on_bind_field_hook():
         foo = fields.Str()
 
         def on_bind_field(self, field_name, field_obj):
+            assert field_obj.parent is self
             field_obj.metadata['fname'] = field_name
 
     schema = MySchema()
     assert schema.fields['foo'].metadata['fname'] == 'foo'
+
+
+def test_nested_on_bind_field_hook():
+    class MySchema(Schema):
+
+        class NestedSchema(Schema):
+            bar = fields.Str()
+
+            def on_bind_field(self, field_name, field_obj):
+                field_obj.metadata['fname'] = self.context['fname']
+
+        foo = fields.Nested(NestedSchema)
+
+    schema1 = MySchema(context={'fname': 'foobar'})
+    schema2 = MySchema(context={'fname': 'quxquux'})
+
+    assert schema1.fields['foo'].schema.fields['bar'].metadata['fname'] == 'foobar'
+    assert schema2.fields['foo'].schema.fields['bar'].metadata['fname'] == 'quxquux'
 
 
 class TestValidate:
@@ -560,7 +579,7 @@ def test_can_serialize_uuid(serialized_user, user):
     assert serialized_user.data['uid'] == str(user.uid)
 
 def test_can_serialize_time(user, serialized_user):
-    expected = user.time_registered.isoformat()[:12]
+    expected = user.time_registered.isoformat()[:15]
     assert serialized_user.data['time_registered'] == expected
 
 def test_invalid_time():
@@ -649,6 +668,157 @@ def test_error_raised_if_additional_option_is_not_list():
 
             class Meta:
                 additional = 'email'
+
+
+def test_nested_only():
+    class ChildSchema(Schema):
+        foo = fields.Field()
+        bar = fields.Field()
+        baz = fields.Field()
+    class ParentSchema(Schema):
+        bla = fields.Field()
+        bli = fields.Field()
+        blubb = fields.Nested(ChildSchema)
+    sch = ParentSchema(only=('bla', 'blubb.foo', 'blubb.bar'))
+    data = dict(bla=1, bli=2, blubb=dict(foo=42, bar=24, baz=242))
+    result = sch.dump(data)
+    assert 'bla' in result.data
+    assert 'blubb' in result.data
+    assert 'bli' not in result.data
+    child = result.data['blubb']
+    assert 'foo' in child
+    assert 'bar' in child
+    assert 'baz' not in child
+
+
+def test_nested_exclude():
+    class ChildSchema(Schema):
+        foo = fields.Field()
+        bar = fields.Field()
+        baz = fields.Field()
+    class ParentSchema(Schema):
+        bla = fields.Field()
+        bli = fields.Field()
+        blubb = fields.Nested(ChildSchema)
+    sch = ParentSchema(exclude=('bli', 'blubb.baz'))
+    data = dict(bla=1, bli=2, blubb=dict(foo=42, bar=24, baz=242))
+    result = sch.dump(data)
+    assert 'bla' in result.data
+    assert 'blubb' in result.data
+    assert 'bli' not in result.data
+    child = result.data['blubb']
+    assert 'foo' in child
+    assert 'bar' in child
+    assert 'baz' not in child
+
+
+def test_nested_only_and_exclude():
+    class ChildSchema(Schema):
+        foo = fields.Field()
+        bar = fields.Field()
+        baz = fields.Field()
+    class ParentSchema(Schema):
+        bla = fields.Field()
+        bli = fields.Field()
+        blubb = fields.Nested(ChildSchema)
+    sch = ParentSchema(only=('bla', 'blubb.foo', 'blubb.bar'), exclude=('blubb.foo',))
+    data = dict(bla=1, bli=2, blubb=dict(foo=42, bar=24, baz=242))
+    result = sch.dump(data)
+    assert 'bla' in result.data
+    assert 'blubb' in result.data
+    assert 'bli' not in result.data
+    child = result.data['blubb']
+    assert 'foo' not in child
+    assert 'bar' in child
+    assert 'baz' not in child
+
+
+def test_meta_nested_exclude():
+    class ChildSchema(Schema):
+        foo = fields.Field()
+        bar = fields.Field()
+        baz = fields.Field()
+    class ParentSchema(Schema):
+        bla = fields.Field()
+        bli = fields.Field()
+        blubb = fields.Nested(ChildSchema)
+        class Meta:
+            exclude = ('blubb.foo',)
+    sch = ParentSchema()
+    data = dict(bla=1, bli=2, blubb=dict(foo=42, bar=24, baz=242))
+    result = sch.dump(data)
+    assert 'bla' in result.data
+    assert 'blubb' in result.data
+    assert 'bli' in result.data
+    child = result.data['blubb']
+    assert 'foo' not in child
+    assert 'bar' in child
+    assert 'baz' in child
+
+
+def test_deeply_nested_only_and_exclude():
+    class GrandChildSchema(Schema):
+        goo = fields.Field()
+        gah = fields.Field()
+        bah = fields.Field()
+    class ChildSchema(Schema):
+        foo = fields.Field()
+        bar = fields.Field()
+        flubb = fields.Nested(GrandChildSchema)
+    class ParentSchema(Schema):
+        bla = fields.Field()
+        bli = fields.Field()
+        blubb = fields.Nested(ChildSchema)
+    sch = ParentSchema(
+        only=('bla', 'blubb.foo', 'blubb.flubb.goo', 'blubb.flubb.gah'),
+        exclude=('blubb.flubb.goo',)
+    )
+    data = dict(bla=1, bli=2, blubb=dict(foo=3, bar=4, flubb=dict(goo=5, gah=6, bah=7)))
+    result = sch.dump(data)
+    assert 'bla' in result.data
+    assert 'blubb' in result.data
+    assert 'bli' not in result.data
+    child = result.data['blubb']
+    assert 'foo' in child
+    assert 'flubb' in child
+    assert 'bar' not in child
+    grand_child = child['flubb']
+    assert 'gah' in grand_child
+    assert 'goo' not in grand_child
+    assert 'bah' not in grand_child
+
+
+def test_nested_constructor_only_and_exclude():
+    class GrandChildSchema(Schema):
+        goo = fields.Field()
+        gah = fields.Field()
+        bah = fields.Field()
+    class ChildSchema(Schema):
+        foo = fields.Field()
+        bar = fields.Field()
+        flubb = fields.Nested(GrandChildSchema)
+    class ParentSchema(Schema):
+        bla = fields.Field()
+        bli = fields.Field()
+        blubb = fields.Nested(
+            ChildSchema,
+            only=('foo', 'flubb.goo', 'flubb.gah'),
+            exclude=('flubb.goo',)
+        )
+    sch = ParentSchema(only=('bla', 'blubb'))
+    data = dict(bla=1, bli=2, blubb=dict(foo=3, bar=4, flubb=dict(goo=5, gah=6, bah=7)))
+    result = sch.dump(data)
+    assert 'bla' in result.data
+    assert 'blubb' in result.data
+    assert 'bli' not in result.data
+    child = result.data['blubb']
+    assert 'foo' in child
+    assert 'flubb' in child
+    assert 'bar' not in child
+    grand_child = child['flubb']
+    assert 'gah' in grand_child
+    assert 'goo' not in grand_child
+    assert 'bah' not in grand_child
 
 
 def test_only_and_exclude():
@@ -1101,6 +1271,23 @@ class TestNestedSchema:
         b = Blog('Authorless blog', user=None)
         _, errs = BlogRequiredSchema().dump(b)
         assert 'user' not in errs
+
+    def test_nested_required_errors_with_load_from(self):
+        class DatesInfoSchema(Schema):
+            created = fields.DateTime(required=True)
+            updated = fields.DateTime(required=True)
+
+        class UserSimpleSchema(Schema):
+            name = fields.String(required=True)
+            time_registered = fields.Time(load_from='timeRegistered', required=True)
+            dates_info = fields.Nested(DatesInfoSchema, load_from='datesInfo', required=True)
+
+        class BlogRequiredSchema(Schema):
+            user = fields.Nested(UserSimpleSchema, required=True)
+
+        _, errs = BlogRequiredSchema().load({})
+        assert 'timeRegistered' in errs['user']
+        assert 'datesInfo' in errs['user']
 
     def test_nested_none(self):
         class BlogDefaultSchema(Schema):

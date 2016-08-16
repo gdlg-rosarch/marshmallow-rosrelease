@@ -1,6 +1,131 @@
 Changelog
 ---------
 
+2.9.1 (2016-07-21)
+++++++++++++++++++
+
+Bug fixes:
+
+- Fix serialization of ``datetime.time`` objects with microseconds (:issue:`464`). Thanks :user:`Tim-Erwin` for reporting and thanks :user:`vuonghv` for the fix.
+- Make ``@validates`` consistent with field validator behavior: if validation fails, the field will not be included in the deserialized output (:issue:`391`). Thanks :user:`martinstein` for reporting and thanks :user:`@vuonghv` for the fix.
+
+2.9.0 (2016-07-06)
+++++++++++++++++++
+
+- ``Decimal`` field coerces input values to a string before deserializing to a `decimal.Decimal` object in order to avoid transformation of float values under 12 significant digits (:issue:`434`, :issue:`435`). Thanks :user:`davidthornton` for the PR.
+
+2.8.0 (2016-06-23)
+++++++++++++++++++
+
+Features:
+
+- Allow ``only`` and ``exclude`` parameters to take nested fields, using dot-delimited syntax (e.g. ``only=['blog.author.email']``) (:issue:`402`). Thanks :user:`Tim-Erwin` and :user:`deckar01` for the discussion and implementation.
+
+Support:
+
+- Update tasks.py for compatibility with invoke>=0.13.0. Thanks :user:`deckar01`.
+
+2.7.3 (2016-05-05)
+++++++++++++++++++
+
+- Make ``field.parent`` and ``field.name`` accessible to ``on_bind_field`` (:issue:`449`). Thanks :user:`immerrr`.
+
+2.7.2 (2016-04-27)
+++++++++++++++++++
+
+No code changes in this release. This is a reupload in order to distribute an sdist for the last hotfix release. See :issue:`443`.
+
+Support:
+
+- Update license entry in setup.py to fix RPM distributions (:issue:`433`). Thanks :user:`rrajaravi` for reporting.
+
+2.7.1 (2016-04-08)
+++++++++++++++++++
+
+Bug fixes:
+
+- Only add Schemas to class registry if a class name is provided. This allows Schemas to be
+  constructed dynamically using the ``type`` constructor without getting added to the class registry (which is useful for saving memory).
+
+2.7.0 (2016-04-04)
+++++++++++++++++++
+
+Features:
+
+- Make context available to ``Nested`` field's ``on_bind_field`` method (:issue:`408`). Thanks :user:`immerrr` for the PR.
+- Pass through user ``ValidationError`` kwargs (:issue:`418`). Thanks :user:`russelldavies` for helping implement this.
+
+Other changes:
+
+- Remove unused attributes ``root``, ``parent``, and ``name`` from ``SchemaABC`` (:issue:`410`). Thanks :user:`Tim-Erwin` for the PR.
+
+2.6.1 (2016-03-17)
+++++++++++++++++++
+
+Bug fixes:
+
+- Respect `load_from` when reporting errors for nested required fields (:issue:`414`). Thanks :user:`yumike`.
+
+2.6.0 (2016-02-01)
+++++++++++++++++++
+
+Features:
+
+- Add ``partial`` argument to ``Schema.validate`` (:issue:`379`). Thanks :user:`tdevelioglu` for the PR.
+- Add ``equal`` argument to ``validate.Length``. Thanks :user:`daniloakamine`.
+- Collect all validation errors for each item deserialized by a ``List`` field (:issue:`345`). Thanks :user:`maximkulkin` for the report and the PR.
+
+2.5.0 (2016-01-16)
+++++++++++++++++++
+
+Features:
+
+- Allow a tuple of field names to be passed as the ``partial`` argument to ``Schema.load`` (:issue:`369`). Thanks :user:`tdevelioglu` for the PR.
+- Add ``schemes`` argument to ``validate.URL`` (:issue:`356`).
+
+2.4.2 (2015-12-08)
+++++++++++++++++++
+
+Bug fixes:
+
+- Prevent duplicate error messages when validating nested collections (:issue:`360`). Thanks :user:`alexmorken` for the catch and patch.
+
+2.4.1 (2015-12-07)
+++++++++++++++++++
+
+Bug fixes:
+
+- Serializing an iterator will not drop the first item (:issue:`343`, :issue:`353`). Thanks :user:`jmcarp` for the patch. Thanks :user:`edgarallang` and :user:`jmcarp` for reporting.
+
+2.4.0 (2015-12-06)
+++++++++++++++++++
+
+Features:
+
+- Add ``skip_on_field_errors`` parameter to ``validates_schema`` (:issue:`323`). Thanks :user:`jjvattamattom` for the suggestion and :user:`d-sutherland` for the PR.
+
+Bug fixes:
+
+- Fix ``FormattedString`` serialization (:issue:`348`). Thanks :user:`acaird` for reporting.
+- Fix ``@validates`` behavior when used when ``attribute`` is specified and ``strict=True`` (:issue:`350`). Thanks :user:`density` for reporting.
+
+2.3.0 (2015-11-22)
+++++++++++++++++++
+
+Features:
+
+- Add ``dump_to`` parameter to fields (:issue:`310`). Thanks :user:`ShayanArmanPercolate` for the suggestion. Thanks :user:`franciscod` and :user:`ewang` for the PRs.
+- The ``deserialize`` function passed to ``fields.Function`` can optionally receive a ``context`` argument (:issue:`324`). Thanks :user:`DamianHeard`.
+- The ``serialize`` function passed to ``fields.Function`` is optional (:issue:`325`). Thanks again :user:`DamianHeard`.
+- The ``serialize`` function passed to ``fields.Method`` is optional (:issue:`329`). Thanks :user:`justanr`.
+
+Deprecation/Removal:
+
+- The ``func`` argument of ``fields.Function`` has been renamed to ``serialize``.
+- The ``method_name`` argument of ``fields.Method`` has been renamed to ``serialize``.
+
+``func`` and ``method_name`` are still present for backwards-compatibility, but they will both be removed in marshmallow 3.0.
+
 2.2.1 (2015-11-11)
 ++++++++++++++++++
 

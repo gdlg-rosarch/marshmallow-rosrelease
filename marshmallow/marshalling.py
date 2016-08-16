@@ -10,7 +10,7 @@ and from primitive types.
 
 from __future__ import unicode_literals
 
-from marshmallow.utils import missing
+from marshmallow.utils import is_collection, missing
 from marshmallow.compat import text_type, iteritems
 from marshmallow.exceptions import (
     ValidationError,
@@ -35,6 +35,8 @@ class ErrorStore(object):
         self.error_field_names = []
         #: True while (de)serializing a collection
         self._pending = False
+        #: Dictionary of extra kwargs from user raised exception
+        self.error_kwargs = {}
 
     def reset_errors(self):
         self.errors = {}
@@ -64,6 +66,7 @@ class ErrorStore(object):
         try:
             value = getter_func(data)
         except ValidationError as err:  # Store validation errors
+            self.error_kwargs.update(err.kwargs)
             self.error_fields.append(field_obj)
             self.error_field_names.append(field_name)
             errors = self.get_errors(index=index)
@@ -131,10 +134,9 @@ class Marshaller(ErrorStore):
         for attr_name, field_obj in iteritems(fields_dict):
             if getattr(field_obj, 'load_only', False):
                 continue
-            if not self.prefix:
-                key = attr_name
-            else:
-                key = ''.join([self.prefix, attr_name])
+
+            key = ''.join([self.prefix or '', field_obj.dump_to or attr_name])
+
             getter = lambda d: field_obj.serialize(attr_name, d, accessor=accessor)
             value = self.call_and_store(
                 getter_func=getter,
@@ -182,6 +184,7 @@ class Unmarshaller(ErrorStore):
                 raise ValidationError(self.default_schema_validation_error)
         except ValidationError as err:
             errors = self.get_errors(index=index)
+            self.error_kwargs.update(err.kwargs)
             # Store or reraise errors
             if err.field_names:
                 field_names = err.field_names
@@ -205,12 +208,6 @@ class Unmarshaller(ErrorStore):
                     errors.setdefault(field_name, []).append(err.messages)
                 else:
                     errors.setdefault(field_name, []).append(text_type(err))
-            raise ValidationError(
-                errors,
-                fields=field_objs,
-                field_names=field_names,
-                data=output
-            )
 
     def deserialize(self, data, fields_dict, many=False, partial=False,
             dict_class=dict, index_errors=True, index=None):
@@ -220,7 +217,9 @@ class Unmarshaller(ErrorStore):
         :param dict fields_dict: Mapping of field names to :class:`Field` objects.
         :param bool many: Set to `True` if ``data`` should be deserialized as
             a collection.
-        :param bool partial: If `True`, ignore missing fields.
+        :param bool|tuple partial: Whether to ignore missing fields. If its
+            value is an iterable, only missing fields listed in that iterable
+            will be ignored.
         :param type dict_class: Dictionary class used to construct the output.
         :param bool index_errors: Whether to store the index of invalid items in
             ``self.errors`` when ``many=True``.
@@ -249,6 +248,7 @@ class Unmarshaller(ErrorStore):
             return ret
         if data is not None:
             items = []
+            partial_is_collection = is_collection(partial)
             for attr_name, field_obj in iteritems(fields_dict):
                 if field_obj.dump_only:
                     continue
@@ -270,7 +270,11 @@ class Unmarshaller(ErrorStore):
                     field_name = field_obj.load_from
                     raw_value = data.get(field_obj.load_from, missing)
                 if raw_value is missing:
-                    if partial:
+                    # Ignore missing field if we're allowed to.
+                    if (
+                        partial is True or
+                        (partial_is_collection and attr_name in partial)
+                    ):
                         continue
                     _miss = field_obj.missing
                     raw_value = _miss() if callable(_miss) else _miss

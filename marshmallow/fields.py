@@ -67,6 +67,7 @@ class Field(FieldABC):
     :param str load_from: Additional key to look for when deserializing. Will only
         be checked if the field's name is not found on the input dictionary. If checked,
         it will return this parameter on error.
+    :param str dump_to: Field name to use as a key when serializing.
     :param callable validate: Validator or collection of validators that are called
         during deserialization. Validator takes a field's input value as
         its only parameter and returns a boolean.
@@ -121,12 +122,13 @@ class Field(FieldABC):
         'validator_failed': 'Invalid value.'
     }
 
-    def __init__(self, default=missing_, attribute=None, load_from=None, error=None,
-                 validate=None, required=False, allow_none=None, load_only=False,
+    def __init__(self, default=missing_, attribute=None, load_from=None, dump_to=None,
+                 error=None, validate=None, required=False, allow_none=None, load_only=False,
                  dump_only=False, missing=missing_, error_messages=None, **metadata):
         self.default = default
         self.attribute = attribute
         self.load_from = load_from  # this flag is used by Unmarshaller
+        self.dump_to = dump_to  # this flag is used by Marshaller
         self.validate = validate
         if utils.is_iterable_but_not_string(validate):
             if not utils.is_generator(validate):
@@ -156,7 +158,6 @@ class Field(FieldABC):
         self.metadata = metadata
         self._creation_index = Field._creation_index
         Field._creation_index += 1
-        self.parent = FieldABC.parent
 
         # Collect default error message from self and parent classes
         messages = {}
@@ -188,17 +189,19 @@ class Field(FieldABC):
         does not succeed.
         """
         errors = []
+        kwargs = {}
         for validator in self.validators:
             try:
                 if validator(value) is False:
                     self.fail('validator_failed')
             except ValidationError as err:
+                kwargs.update(err.kwargs)
                 if isinstance(err.messages, dict):
                     errors.append(err.messages)
                 else:
                     errors.extend(err.messages)
         if errors:
-            raise ValidationError(errors)
+            raise ValidationError(errors, **kwargs)
 
     # Hat tip to django-rest-framework.
     def fail(self, key, **kwargs):
@@ -316,9 +319,9 @@ class Field(FieldABC):
 
     @property
     def root(self):
-        """Reference to the top-level `Schema` that this field belongs to."""
+        """Reference to the `Schema` that this field belongs to even if it is buried in a `List`."""
         ret = self
-        while ret.parent:
+        while hasattr(ret, 'parent') and ret.parent:
             ret = ret.parent
         return ret
 
@@ -358,12 +361,11 @@ class Nested(Field):
         'type': 'Invalid type.',
     }
 
-    def __init__(self, nested, default=missing_, exclude=tuple(), only=None,
-                many=False, **kwargs):
+    def __init__(self, nested, default=missing_, exclude=tuple(), only=None, **kwargs):
         self.nested = nested
         self.only = only
         self.exclude = exclude
-        self.many = many
+        self.many = kwargs.get('many', False)
         self.__schema = None  # Cached Schema instance
         self.__updated_fields = False
         super(Nested, self).__init__(default=default, **kwargs)
@@ -380,28 +382,30 @@ class Nested(Field):
             only = (self.only, )
         else:
             only = self.only
+
+        # Inherit context from parent.
+        context = getattr(self.parent, 'context', {})
         if not self.__schema:
             if isinstance(self.nested, SchemaABC):
                 self.__schema = self.nested
+                self.__schema.context.update(context)
             elif isinstance(self.nested, type) and \
                     issubclass(self.nested, SchemaABC):
                 self.__schema = self.nested(many=self.many,
-                        only=only, exclude=self.exclude)
+                        only=only, exclude=self.exclude, context=context)
             elif isinstance(self.nested, basestring):
                 if self.nested == _RECURSIVE_NESTED:
                     parent_class = self.parent.__class__
                     self.__schema = parent_class(many=self.many, only=only,
-                            exclude=self.exclude)
+                            exclude=self.exclude, context=context)
                 else:
                     schema_class = class_registry.get_class(self.nested)
                     self.__schema = schema_class(many=self.many,
-                            only=only, exclude=self.exclude)
+                            only=only, exclude=self.exclude, context=context)
             else:
                 raise ValueError('Nested fields must be passed a '
                                  'Schema, not {0}.'.format(self.nested.__class__))
         self.__schema.ordered = getattr(self.parent, 'ordered', False)
-        # Inherit context from parent
-        self.__schema.context.update(getattr(self.parent, 'context', {}))
         return self.__schema
 
     def _serialize(self, nested_obj, attr, obj):
@@ -450,17 +454,18 @@ class Nested(Field):
             for field_name, field in self.schema.fields.items():
                 if not field.required:
                     continue
+                error_field_name = field.load_from or field_name
                 if (
                     isinstance(field, Nested) and
                     self.nested != _RECURSIVE_NESTED and
                     field.nested != _RECURSIVE_NESTED
                 ):
-                    errors[field_name] = field._check_required()
+                    errors[error_field_name] = field._check_required()
                 else:
                     try:
                         field._validate_missing(field.missing)
                     except ValidationError as ve:
-                        errors[field_name] = ve.messages
+                        errors[error_field_name] = ve.messages
             if self.many and errors:
                 errors = {0: errors}
             # No inner errors; just raise required error like normal
@@ -529,11 +534,22 @@ class List(Field):
         return [self.container._serialize(value, attr, obj)]
 
     def _deserialize(self, value, attr, data):
-        if utils.is_collection(value):
-            # Convert all instances in typed list to container type
-            return [self.container.deserialize(each) for each in value]
-        else:
+        if not utils.is_collection(value):
             self.fail('invalid')
+
+        result = []
+        errors = {}
+        for idx, each in enumerate(value):
+            try:
+                result.append(self.container.deserialize(each))
+            except ValidationError as e:
+                result.append(e.data)
+                errors.update({idx: e.messages})
+
+        if errors:
+            raise ValidationError(errors, data=result)
+
+        return result
 
 class String(Field):
     """A string field.
@@ -562,14 +578,15 @@ class String(Field):
 class UUID(String):
     """A UUID field."""
     default_error_messages = {
-        'invalid_guid': 'Not a valid UUID.'
+        'invalid_uuid': 'Not a valid UUID.',
+        'invalid_guid': 'Not a valid UUID.'  # TODO: Remove this in marshmallow 3.0
     }
 
     def _deserialize(self, value, attr, data):
         try:
             return uuid.UUID(value)
         except (ValueError, AttributeError):
-            self.fail('invalid_guid')
+            self.fail('invalid_uuid')
 
 
 class Number(Field):
@@ -642,6 +659,16 @@ class Decimal(Number):
         a JSON library that can handle decimals, such as `simplejson`, or serialize
         to a string by passing ``as_string=True``.
 
+    .. warning::
+
+        If a JSON `float` value is passed to this field for deserialization it will
+        first be cast to its corresponding `string` value before being deserialized
+        to a `decimal.Decimal` object. The default `__str__` implementation of the
+        built-in Python `float` type may apply a destructive transformation upon
+        its input data and therefore cannot be relied upon to preserve precision.
+        To avoid this, you can instead pass a JSON `string` to be deserialized
+        directly.
+
     :param int places: How many decimal places to quantize the value. If `None`, does
         not quantize the value.
     :param rounding: How to round the value during quantize, for example
@@ -673,7 +700,7 @@ class Decimal(Number):
         if value is None:
             return None
 
-        num = decimal.Decimal(value)
+        num = decimal.Decimal(str(value))
 
         if self.allow_nan:
             if num.is_nan():
@@ -750,6 +777,7 @@ class FormattedString(Field):
     default_error_messages = {
         'format': 'Cannot format string with given data.'
     }
+    _CHECK_ATTRIBUTE = False
 
     def __init__(self, src_str, *args, **kwargs):
         Field.__init__(self, *args, **kwargs)
@@ -890,7 +918,7 @@ class Time(Field):
         except AttributeError:
             self.fail('format', input=value)
         if value.microsecond:
-            return ret[:12]
+            return ret[:15]
         return ret
 
     def _deserialize(self, value, attr, data):
@@ -1097,19 +1125,28 @@ class Method(Field):
 
     .. versionchanged:: 2.0.0
         Removed optional ``context`` parameter on methods. Use ``self.context`` instead.
+    .. versionchanged:: 2.3.0
+        Deprecated ``method_name`` parameter in favor of ``serialize`` and allow
+        ``serialize`` to not be passed at all.
     """
     _CHECK_ATTRIBUTE = False
 
-    def __init__(self, method_name, deserialize=None, **kwargs):
-        self.method_name = method_name
-        if deserialize:
-            self.deserialize_method_name = deserialize
-        else:
-            self.deserialize_method_name = None
+    def __init__(self, serialize=None, deserialize=None, method_name=None, **kwargs):
+        if method_name is not None:
+            warnings.warn('"method_name" argument of fields.Method is deprecated. '
+                          'Use the "serialize" argument instead.', DeprecationWarning)
+
+        self.serialize_method_name = self.method_name = serialize or method_name
+        self.deserialize_method_name = deserialize
         super(Method, self).__init__(**kwargs)
 
     def _serialize(self, value, attr, obj):
-        method = utils.callable_or_raise(getattr(self.parent, self.method_name, None))
+        if not self.serialize_method_name:
+            return missing_
+
+        method = utils.callable_or_raise(
+            getattr(self.parent, self.serialize_method_name, None)
+        )
         try:
             return method(obj)
         except AttributeError:
@@ -1131,40 +1168,56 @@ class Method(Field):
 class Function(Field):
     """A field that takes the value returned by a function.
 
-    :param callable func: A callable from which to retrieve the value.
+    :param callable serialize: A callable from which to retrieve the value.
         The function must take a single argument ``obj`` which is the object
         to be serialized. It can also optionally take a ``context`` argument,
         which is a dictionary of context variables passed to the serializer.
-    :param callable deserialize: Deserialization function that takes the value
-        to be deserialized as its only argument.
+        If no callable is provided then the ```load_only``` flag will be set
+        to True.
+    :param callable deserialize: A callable from which to retrieve the value.
+        The function must take a single argument ``value`` which is the value
+        to be deserialized. It can also optionally take a ``context`` argument,
+        which is a dictionary of context variables passed to the deserializer.
+        If no callable is provided then ```value``` will be passed through
+        unchanged.
+    :param callable func: This argument is to be deprecated. It exists for
+        backwards compatiblity. Use serialize instead.
+
+    .. versionchanged:: 2.3.0
+        Deprecated ``func`` parameter in favor of ``serialize``.
     """
     _CHECK_ATTRIBUTE = False
 
-    def __init__(self, func, deserialize=None, **kwargs):
+    def __init__(self, serialize=None, deserialize=None, func=None, **kwargs):
+        if func:
+            warnings.warn('"func" argument of fields.Function is deprecated. '
+                          'Use the "serialize" argument instead.', DeprecationWarning)
+            serialize = func
         super(Function, self).__init__(**kwargs)
-        self.func = utils.callable_or_raise(func)
-        if deserialize:
-            self.deserialize_func = utils.callable_or_raise(deserialize)
-        else:
-            self.deserialize_func = None
+        self.serialize_func = self.func = serialize and utils.callable_or_raise(serialize)
+        self.deserialize_func = deserialize and utils.callable_or_raise(deserialize)
 
     def _serialize(self, value, attr, obj):
         try:
-            if len(utils.get_func_args(self.func)) > 1:
-                if self.parent.context is None:
-                    msg = 'No context available for Function field {0!r}'.format(attr)
-                    raise ValidationError(msg)
-                return self.func(obj, self.parent.context)
-            else:
-                return self.func(obj)
+            return self._call_or_raise(self.serialize_func, obj, attr)
         except AttributeError:  # the object is not expected to have the attribute
             pass
         return missing_
 
     def _deserialize(self, value, attr, data):
         if self.deserialize_func:
-            return self.deserialize_func(value)
+            return self._call_or_raise(self.deserialize_func, value, attr)
         return value
+
+    def _call_or_raise(self, func, value, attr):
+        if len(utils.get_func_args(func)) > 1:
+            if self.parent.context is None:
+                msg = 'No context available for Function field {0!r}'.format(attr)
+                raise ValidationError(msg)
+            return func(value, self.parent.context)
+        else:
+            return func(value)
+
 
 
 class Constant(Field):

@@ -1,0 +1,12 @@
+Source: ros-indigo-marshmallow
+Section: misc
+Priority: extra
+Maintainer: AlexV <asmodehn@gmail.com>
+Build-Depends: debhelper (>= 9.0.0), python-dateutil (>= 1.5.2), python-simplejson (>= 1.5.2), ros-indigo-catkin (>= 0.6.18), ros-indigo-catkin-pip (>= 0.1.11)
+Homepage: 
+Standards-Version: 3.9.2
+
+Package: ros-indigo-marshmallow
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, python-dateutil (>= 1.5.2), python-simplejson (>= 1.5.2)
+Description: A lightweight library for converting complex objects to and from simple Python datatypes.

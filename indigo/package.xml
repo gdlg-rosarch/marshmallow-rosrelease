@@ -21,6 +21,7 @@ A lightweight library for converting complex objects to and from simple Python d
   <depend>python-simplejson</depend>
 
   <test_depend>python-tz</test_depend>
+  <test_depend>python-pytest</test_depend>
 
   <export>
     <external external_url="http://marshmallow.readthedocs.io/" />

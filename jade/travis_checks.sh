@@ -2,7 +2,7 @@
 set -e
 
 # These variables need to be setup before calling this script:
-# CI_ROS_DISTRO [indigo | jade | kinetic]
+# ROS_DISTRO [indigo | jade | kinetic]
 # ROS_FLOW [devel | install]
 
 source /opt/ros/$ROS_DISTRO/setup.bash

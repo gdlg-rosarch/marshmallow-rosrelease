@@ -15,7 +15,7 @@ A lightweight library for converting complex objects to and from simple Python d
   <maintainer email="asmodehn@gmail.com">AlexV</maintainer>
 
   <buildtool_depend version_gte="0.6.18">catkin</buildtool_depend>
-  <build_depend version_gte="0.1.11">catkin_pip</build_depend>
+  <build_depend version_gte="0.1.16">catkin_pip</build_depend>
 
   <depend>python-dateutil</depend>
   <depend>python-simplejson</depend>

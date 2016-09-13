@@ -1,3 +1,26 @@
+## marshmallow (kinetic) - 2.9.1-0
+
+The packages in the `marshmallow` repository were released into the `kinetic` distro by running `/usr/bin/bloom-release --rosdistro kinetic --track kinetic marshmallow` on `Tue, 13 Sep 2016 02:09:20 -0000`
+
+The `marshmallow` package was released.
+
+Version of package(s) in repository `marshmallow`:
+
+- upstream repository: https://github.com/marshmallow-code/marshmallow.git
+- release repository: unknown
+- rosdistro version: `null`
+- old version: `null`
+- new version: `2.9.1-0`
+
+Versions of tools used:
+
+- bloom version: `0.5.22`
+- catkin_pkg version: `0.2.10`
+- rosdep version: `0.11.5`
+- rosdistro version: `0.4.7`
+- vcstools version: `0.1.38`
+
+
 ## marshmallow (jade) - 2.9.1-2
 
 The packages in the `marshmallow` repository were released into the `jade` distro by running `/usr/bin/bloom-release --rosdistro jade --track jade marshmallow` on `Mon, 12 Sep 2016 08:36:24 -0000`

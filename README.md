@@ -377,3 +377,9 @@ Versions of tools used:
 
 # marshmallow-rosrelease
 Releasing https://github.com/marshmallow-code/marshmallow for ROS
+
+
+| Indigo | Jade | Kinetic |
+|:------:|:----:|:-------:|
+| [![Build Status](https://travis-ci.org/asmodehn/marshmallow-rosrelease.svg?branch=release%2Findigo%2Fmarshmallow)](https://travis-ci.org/asmodehn/pmarshmallow-rosrelease) | [![Build Status](https://travis-ci.org/asmodehn/marshmallow-rosrelease.svg?branch=release%2Fjade%2Fmarshmallow)](https://travis-ci.org/asmodehn/marshmallow-rosrelease) | [![Build Status](https://travis-ci.org/asmodehn/marshmallow-rosrelease.svg?branch=release%2Fkinetic%2Fmarshmallow)](https://travis-ci.org/asmodehn/marshmallow-rosrelease) |
+

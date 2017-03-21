@@ -1,0 +1,12 @@
+Source: ros-kinetic-marshmallow
+Section: misc
+Priority: extra
+Maintainer: AlexV <asmodehn@gmail.com>
+Build-Depends: debhelper (>= 9.0.0), python-dateutil, python-pytest, python-simplejson, python-tz, ros-kinetic-catkin (>= 0.6.18), ros-kinetic-catkin-pip (>= 0.2.0)
+Homepage: 
+Standards-Version: 3.9.2
+
+Package: ros-kinetic-marshmallow
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, python-dateutil, python-simplejson
+Description: A lightweight library for converting complex objects to and from simple Python datatypes.

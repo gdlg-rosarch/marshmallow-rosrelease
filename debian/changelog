@@ -1,0 +1,464 @@
+ros-jade-marshmallow (2.9.1-3vivid) vivid; urgency=high
+
+  Bug fixes:
+  * Fix serialization of ``datetime.time`` objects with microseconds (:issue:`464`). Thanks :user:`Tim-Erwin` for reporting and thanks :user:`vuonghv` for the fix.
+  * Make ``@validates`` consistent with field validator behavior: if validation fails, the field will not be included in the deserialized output (:issue:`391`). Thanks :user:`martinstein` for reporting and thanks :user:`@vuonghv` for the fix.
+
+ -- AlexV <asmodehn@gmail.com>  Wed, 20 Jul 2016 15:00:00 -0000
+
+ros-jade-marshmallow (2.9.0-3vivid) vivid; urgency=high
+
+  * ``Decimal`` field coerces input values to a string before deserializing to a decimal.Decimal object in order to avoid transformation of float values under 12 significant digits (:issue:`434`, :issue:`435`). Thanks :user:`davidthornton` for the PR.
+
+ -- AlexV <asmodehn@gmail.com>  Tue, 05 Jul 2016 15:00:00 -0000
+
+ros-jade-marshmallow (2.8.0-3vivid) vivid; urgency=high
+
+  Features:
+  * Allow ``only`` and ``exclude`` parameters to take nested fields, using dot-delimited syntax (e.g. ``only=['blog.author.email']``) (:issue:`402`). Thanks :user:`Tim-Erwin` and :user:`deckar01` for the discussion and implementation.
+  Support:
+  * Update tasks.py for compatibility with invoke>=0.13.0. Thanks :user:`deckar01`.
+
+ -- AlexV <asmodehn@gmail.com>  Wed, 22 Jun 2016 15:00:00 -0000
+
+ros-jade-marshmallow (2.7.3-3vivid) vivid; urgency=high
+
+  * Make ``field.parent`` and ``field.name`` accessible to ``on_bind_field`` (:issue:`449`). Thanks :user:`immerrr`.
+
+ -- AlexV <asmodehn@gmail.com>  Wed, 04 May 2016 15:00:00 -0000
+
+ros-jade-marshmallow (2.7.2-3vivid) vivid; urgency=high
+
+  No code changes in this release. This is a reupload in order to distribute an sdist for the last hotfix release. See :issue:`443`.
+  Support:
+  * Update license entry in setup.py to fix RPM distributions (:issue:`433`). Thanks :user:`rrajaravi` for reporting.
+
+ -- AlexV <asmodehn@gmail.com>  Tue, 26 Apr 2016 15:00:00 -0000
+
+ros-jade-marshmallow (2.7.1-3vivid) vivid; urgency=high
+
+  Bug fixes:
+  * Only add Schemas to class registry if a class name is provided. This allows Schemas to be
+    constructed dynamically using the ``type`` constructor without getting added to the class registry (which is useful for saving memory).
+
+ -- AlexV <asmodehn@gmail.com>  Thu, 07 Apr 2016 15:00:00 -0000
+
+ros-jade-marshmallow (2.7.0-3vivid) vivid; urgency=high
+
+  Features:
+  * Make context available to ``Nested`` field's ``on_bind_field`` method (:issue:`408`). Thanks :user:`immerrr` for the PR.
+  * Pass through user ``ValidationError`` kwargs (:issue:`418`). Thanks :user:`russelldavies` for helping implement this.
+  Other changes:
+  * Remove unused attributes ``root``, ``parent``, and ``name`` from ``SchemaABC`` (:issue:`410`). Thanks :user:`Tim-Erwin` for the PR.
+
+ -- AlexV <asmodehn@gmail.com>  Sun, 03 Apr 2016 15:00:00 -0000
+
+ros-jade-marshmallow (2.6.1-3vivid) vivid; urgency=high
+
+  Bug fixes:
+  * Respect load_from when reporting errors for nested required fields (:issue:`414`). Thanks :user:`yumike`.
+
+ -- AlexV <asmodehn@gmail.com>  Wed, 16 Mar 2016 15:00:00 -0000
+
+ros-jade-marshmallow (2.6.0-3vivid) vivid; urgency=high
+
+  Features:
+  * Add ``partial`` argument to ``Schema.validate`` (:issue:`379`). Thanks :user:`tdevelioglu` for the PR.
+  * Add ``equal`` argument to ``validate.Length``. Thanks :user:`daniloakamine`.
+  * Collect all validation errors for each item deserialized by a ``List`` field (:issue:`345`). Thanks :user:`maximkulkin` for the report and the PR.
+
+ -- AlexV <asmodehn@gmail.com>  Sun, 31 Jan 2016 15:00:00 -0000
+
+ros-jade-marshmallow (2.5.0-3vivid) vivid; urgency=high
+
+  Features:
+  * Allow a tuple of field names to be passed as the ``partial`` argument to ``Schema.load`` (:issue:`369`). Thanks :user:`tdevelioglu` for the PR.
+  * Add ``schemes`` argument to ``validate.URL`` (:issue:`356`).
+
+ -- AlexV <asmodehn@gmail.com>  Fri, 15 Jan 2016 15:00:00 -0000
+
+ros-jade-marshmallow (2.4.2-3vivid) vivid; urgency=high
+
+  Bug fixes:
+  * Prevent duplicate error messages when validating nested collections (:issue:`360`). Thanks :user:`alexmorken` for the catch and patch.
+
+ -- AlexV <asmodehn@gmail.com>  Mon, 07 Dec 2015 15:00:00 -0000
+
+ros-jade-marshmallow (2.4.1-3vivid) vivid; urgency=high
+
+  Bug fixes:
+  * Serializing an iterator will not drop the first item (:issue:`343`, :issue:`353`). Thanks :user:`jmcarp` for the patch. Thanks :user:`edgarallang` and :user:`jmcarp` for reporting.
+
+ -- AlexV <asmodehn@gmail.com>  Sun, 06 Dec 2015 15:00:00 -0000
+
+ros-jade-marshmallow (2.4.0-3vivid) vivid; urgency=high
+
+  Features:
+  * Add ``skip_on_field_errors`` parameter to ``validates_schema`` (:issue:`323`). Thanks :user:`jjvattamattom` for the suggestion and :user:`d-sutherland` for the PR.
+  Bug fixes:
+  * Fix ``FormattedString`` serialization (:issue:`348`). Thanks :user:`acaird` for reporting.
+  * Fix ``@validates`` behavior when used when ``attribute`` is specified and ``strict=True`` (:issue:`350`). Thanks :user:`density` for reporting.
+
+ -- AlexV <asmodehn@gmail.com>  Sat, 05 Dec 2015 15:00:00 -0000
+
+ros-jade-marshmallow (2.3.0-3vivid) vivid; urgency=high
+
+  Features:
+  * Add ``dump_to`` parameter to fields (:issue:`310`). Thanks :user:`ShayanArmanPercolate` for the suggestion. Thanks :user:`franciscod` and :user:`ewang` for the PRs.
+  * The ``deserialize`` function passed to ``fields.Function`` can optionally receive a ``context`` argument (:issue:`324`). Thanks :user:`DamianHeard`.
+  * The ``serialize`` function passed to ``fields.Function`` is optional (:issue:`325`). Thanks again :user:`DamianHeard`.
+  * The ``serialize`` function passed to ``fields.Method`` is optional (:issue:`329`). Thanks :user:`justanr`.
+  Deprecation/Removal:
+  * The ``func`` argument of ``fields.Function`` has been renamed to ``serialize``.
+  * The ``method_name`` argument of ``fields.Method`` has been renamed to ``serialize``.
+  ``func`` and ``method_name`` are still present for backwards-compatibility, but they will both be removed in marshmallow 3.0.
+
+ -- AlexV <asmodehn@gmail.com>  Sat, 21 Nov 2015 15:00:00 -0000
+
+ros-jade-marshmallow (2.2.1-3vivid) vivid; urgency=high
+
+  Bug fixes:
+  * Skip field validators for fields that aren't included in ``only`` (:issue:`320`). Thanks :user:`carlos-alberto` for reporting and :user:`eprikazc` for the PR.
+
+ -- AlexV <asmodehn@gmail.com>  Tue, 10 Nov 2015 15:00:00 -0000
+
+ros-jade-marshmallow (2.2.0-3vivid) vivid; urgency=high
+
+  Features:
+  * Add support for partial deserialization with the ``partial`` argument to ``Schema`` and ``Schema.load`` (:issue:`290`). Thanks :user:`taion`.
+  Deprecation/Removals:
+  * ``Query`` and ``QuerySelect`` fields are removed.
+  * Passing of strings to ``required`` and ``allow_none`` is removed. Pass the ``error_messages`` argument instead.
+  Support:
+  * Add example of Schema inheritance in docs (:issue:`225`). Thanks :user:`martinstein` for the suggestion and :user:`juanrossi` for the PR.
+  * Add "Customizing Error Messages" section to custom fields docs.
+
+ -- AlexV <asmodehn@gmail.com>  Sun, 25 Oct 2015 15:00:00 -0000
+
+ros-jade-marshmallow (2.1.3-3vivid) vivid; urgency=high
+
+  Bug fixes:
+  * Fix serialization of collections for which iter will modify position, e.g. Pymongo cursors (:issue:`303`). Thanks :user:`Mise` for the catch and patch.
+
+ -- AlexV <asmodehn@gmail.com>  Sat, 17 Oct 2015 15:00:00 -0000
+
+ros-jade-marshmallow (2.1.2-3vivid) vivid; urgency=high
+
+  Bug fixes:
+  * Fix passing data to schema validator when using ``@validates_schema(many=True)`` (:issue:`297`). Thanks :user:`d-sutherland` for reporting.
+  * Fix usage of ``@validates`` with a nested field when ``many=True`` (:issue:`298`). Thanks :user:`nelfin` for the catch and patch.
+
+ -- AlexV <asmodehn@gmail.com>  Tue, 13 Oct 2015 15:00:00 -0000
+
+ros-jade-marshmallow (2.1.1-3vivid) vivid; urgency=high
+
+  Bug fixes:
+  * ``Constant`` field deserializes to its value regardless of whether its field name is present in input data (:issue:`291`). Thanks :user:`fayazkhan` for reporting.
+
+ -- AlexV <asmodehn@gmail.com>  Tue, 06 Oct 2015 15:00:00 -0000
+
+ros-jade-marshmallow (2.1.0-3vivid) vivid; urgency=high
+
+  Features:
+  * Add ``Dict`` field for arbitrary mapping data (:issue:`251`). Thanks :user:`dwieeb` for adding this and :user:`Dowwie` for the suggestion.
+  * Add ``Field.root`` property, which references the field's Schema.
+  Deprecation/Removals:
+  * The ``extra`` param of ``Schema`` is deprecated. Add extra data in a ``post_load`` method instead.
+  * ``UnmarshallingError`` and ``MarshallingError`` are removed.
+  Bug fixes:
+  * Fix storing multiple schema-level validation errors (:issue:`287`). Thanks :user:`evgeny-sureev` for the patch.
+  * If ``missing=None`` on a field, ``allow_none`` will be set to ``True``.
+  Other changes:
+  * A ``List's`` inner field will have the list field set as its parent. Use ``root`` to access the ``Schema``.
+
+ -- AlexV <asmodehn@gmail.com>  Tue, 29 Sep 2015 15:00:00 -0000
+
+ros-jade-marshmallow (2.0.0-3vivid) vivid; urgency=high
+
+  Features:
+  * Make error messages configurable at the class level and instance level (``Field.default_error_messages`` attribute and ``error_messages`` parameter, respectively).
+  Deprecation/Removals:
+  * Remove ``make_object``. Use a ``post_load`` method instead (:issue:`277`).
+  * Remove the ``error`` parameter and attribute of ``Field``.
+  * Passing string arguments to ``required`` and ``allow_none`` is deprecated. Pass the ``error_messages`` argument instead. **This API will be removed in version 2.2**.
+  * Remove ``Arbitrary``, ``Fixed``, and ``Price`` fields (:issue:`86`). Use ``Decimal`` instead.
+  * Remove ``Select`` / ``Enum`` fields (:issue:`135`). Use the ``OneOf`` validator instead.
+  Bug fixes:
+  * Fix error format for ``Nested`` fields when ``many=True``. Thanks :user:`alexmorken`.
+  * ``pre_dump`` methods are invoked before implicit field creation. Thanks :user:`makmanalp` for reporting.
+  * Return correct "required" error message for ``Nested`` field.
+  * The ``only`` argument passed to a ``Schema`` is bounded by the ``fields`` option (:issue:`183`). Thanks :user:`lustdante` for the suggestion.
+  Changes from 2.0.0rc2:
+  * ``error_handler`` and ``accessor`` options are replaced with the ``handle_error`` and ``get_attribute`` methods :issue:`284`.
+  * Remove ``marshmallow.compat.plain_function`` since it is no longer used.
+  * Non-collection values are invalid input for ``List`` field (:issue:`231`). Thanks :user:`density` for reporting.
+  * Bug fix: Prevent infinite loop when validating a required, self-nested field. Thanks :user:`Bachmann1234` for the fix.
+
+ -- AlexV <asmodehn@gmail.com>  Thu, 24 Sep 2015 15:00:00 -0000
+
+ros-jade-marshmallow (1.2.6-3vivid) vivid; urgency=high
+
+  Bug fixes:
+  * Fix validation error message for ``fields.Decimal``.
+  * Allow error message for ``fields.Boolean`` to be customized with the ``error`` parameter (like other fields).
+
+ -- AlexV <asmodehn@gmail.com>  Sat, 02 May 2015 15:00:00 -0000
+
+ros-jade-marshmallow (1.2.5-3vivid) vivid; urgency=high
+
+  Bug fixes:
+  * Fix validation of invalid types passed to a ``Nested`` field when ``many=True`` (:issue:`188`). Thanks :user:`juanrossi` for reporting.
+  Support:
+  * Fix pep8 dev dependency for flake8. Thanks :user:`taion`.
+
+ -- AlexV <asmodehn@gmail.com>  Fri, 24 Apr 2015 15:00:00 -0000
+
+ros-jade-marshmallow (1.2.4-3vivid) vivid; urgency=high
+
+  Bug fixes:
+  * Fix behavior of ``as_string`` on ``fields.Integer`` (:issue:`173`). Thanks :user:`taion` for the catch and patch.
+  Other changes:
+  * Remove dead code from ``fields.Field``. Thanks :user:`taion`.
+  Support:
+  * Correction to ``_postprocess`` method in docs. Thanks again :user:`taion`.
+
+ -- AlexV <asmodehn@gmail.com>  Sat, 21 Mar 2015 15:00:00 -0000
+
+ros-jade-marshmallow (1.2.3-3vivid) vivid; urgency=high
+
+  Bug fixes:
+  * Fix inheritance of ``ordered`` class Meta option (:issue:`162`). Thanks :user:`stephenfin` for reporting.
+
+ -- AlexV <asmodehn@gmail.com>  Sat, 14 Mar 2015 15:00:00 -0000
+
+ros-jade-marshmallow (1.2.2-3vivid) vivid; urgency=high
+
+  Bug fixes:
+  * Fix behavior of ``skip_missing`` and ``accessor`` options when ``many=True`` (:issue:`137`). Thanks :user:`3rdcycle`.
+  * Fix bug that could cause an ``AttributeError`` when nesting schemas with schema-level validators (:issue:`144`). Thanks :user:`vovanbo` for reporting.
+
+ -- AlexV <asmodehn@gmail.com>  Sun, 22 Feb 2015 15:00:00 -0000
+
+ros-jade-marshmallow (1.2.1-3vivid) vivid; urgency=high
+
+  Bug fixes:
+  * A ``Schema's`` ``error_handler``--if defined--will execute if ``Schema.validate`` returns validation errors (:issue:`121`).
+  * Deserializing None returns None rather than raising an ``AttributeError`` (:issue:`123`). Thanks :user:`RealSalmon` for the catch and patch.
+
+ -- AlexV <asmodehn@gmail.com>  Sat, 10 Jan 2015 15:00:00 -0000
+
+ros-jade-marshmallow (1.2.0-3vivid) vivid; urgency=high
+
+  Features:
+  * Add ``QuerySelect`` and ``QuerySelectList`` fields (:issue:`84`).
+  * Convert validators in ``marshmallow.validate`` into class-based callables to make them easier to use when declaring fields (:issue:`85`).
+  * Add ``Decimal`` field which is safe to use when dealing with precise numbers (:issue:`86`).
+  Thanks :user:`philtay` for these contributions.
+  Bug fixes:
+  * ``Date`` fields correctly deserializes to a ``datetime.date`` object when ``python-dateutil`` is not installed (:issue:`79`). Thanks :user:`malexer` for the catch and patch.
+  * Fix bug that raised an ``AttributeError`` when using a class-based validator.
+  * Fix ``as_string`` behavior of Number fields when serializing to default value.
+  * Deserializing ``None`` or the empty string with either a ``DateTime``, ``Date``, ``Time`` or ``TimeDelta`` results in the correct unmarshalling errors (:issue:`96`). Thanks :user:`svenstaro` for reporting and helping with this.
+  * Fix error handling when deserializing invalid UUIDs (:issue:`106`). Thanks :user:`vesauimonen` for the catch and patch.
+  * ``Schema.loads`` correctly defaults to use the value of ``self.many`` rather than defaulting to ``False`` (:issue:`108`). Thanks :user:`davidism` for the catch and patch.
+  * Validators, data handlers, and preprocessors are no longer shared between schema subclasses (:issue:`88`). Thanks :user:`amikholap` for reporting.
+  * Fix error handling when passing a ``dict`` or ``list`` to a ``ValidationError`` (:issue:`110`). Thanks :user:`ksesong` for reporting.
+  Deprecation:
+  * The validator functions in the ``validate`` module are deprecated in favor of the class-based validators (:issue:`85`).
+  * The ``Arbitrary``, ``Price``, and ``Fixed`` fields are deprecated in favor of the ``Decimal`` field (:issue:`86`).
+  Support:
+  * Update docs theme.
+  * Update contributing docs (:issue:`77`).
+  * Fix namespacing example in "Extending Schema" docs. Thanks :user:`Ch00k`.
+  * Exclude virtualenv directories from syntax checking (:issue:`99`). Thanks :user:`svenstaro`.
+
+ -- AlexV <asmodehn@gmail.com>  Sun, 21 Dec 2014 15:00:00 -0000
+
+ros-jade-marshmallow (1.1.0-3vivid) vivid; urgency=high
+
+  Features:
+  * Add ``Schema.validate`` method which validates input data against a schema. Similar to ``Schema.load``, but does not call ``make_object`` and only returns the errors dictionary.
+  * Add several validation functions to the ``validate`` module. Thanks :user:`philtay`.
+  * Store field name and instance on exceptions raised in ``strict`` mode.
+  Bug fixes:
+  * Fix serializing dictionaries when field names are methods of ``dict`` (e.g. ``"items"``). Thanks :user:`rozenm` for reporting.
+  * If a Nested field is passed ``many=True``, ``None`` serializes to an empty list. Thanks :user:`nickretallack` for reporting.
+  * Fix behavior of ``many`` argument passed to ``dump`` and ``load``. Thanks :user:`svenstaro` for reporting and helping with this.
+  * Fix ``skip_missing`` behavior for ``String`` and ``List`` fields. Thanks :user:`malexer` for reporting.
+  * Fix compatibility with python-dateutil 2.3.
+  * More consistent error messages across DateTime, TimeDelta, Date, and Time fields.
+  Support:
+  * Update Flask and Peewee examples.
+
+ -- AlexV <asmodehn@gmail.com>  Mon, 01 Dec 2014 15:00:00 -0000
+
+ros-jade-marshmallow (1.0.1-3vivid) vivid; urgency=high
+
+  Hotfix release.
+  * Ensure that errors dictionary is correctly cleared on each call to Schema.dump and Schema.load.
+
+ -- AlexV <asmodehn@gmail.com>  Mon, 17 Nov 2014 15:00:00 -0000
+
+ros-jade-marshmallow (1.0.0-3vivid) vivid; urgency=high
+
+  Adds new features, speed improvements, better error handling, and updated documentation.
+  * Add ``skip_missing`` ``class Meta`` option.
+  * A field's ``default`` may be a callable.
+  * Allow accessor function to be configured via the ``Schema.accessor`` decorator or the ``__accessor__`` class member.
+  * ``URL`` and ``Email`` fields are validated upon serialization.
+  * ``dump`` and ``load`` can receive the ``many`` argument.
+  * Move a number of utility functions from fields.py to utils.py.
+  * More useful ``repr`` for ``Field`` classes.
+  * If a field's default is ``fields.missing`` and its serialized value is ``None``, it will not be included in the final serialized result.
+  * Schema.dumps no longer coerces its result to a binary string on Python 3.
+  * *Backwards-incompatible*: Schema output is no longer an ``OrderedDict`` by default. If you want ordered field output, you must explicitly set the ``ordered`` option to ``True``.
+  * *Backwards-incompatible*: error parameter of the Field constructor is deprecated. Raise a ValidationError instead.
+  * Expanded test coverage.
+  * Updated docs.
+
+ -- AlexV <asmodehn@gmail.com>  Sat, 15 Nov 2014 15:00:00 -0000
+
+ros-jade-marshmallow (0.7.0-3vivid) vivid; urgency=high
+
+  * Add ``Serializer.error_handler`` decorator that registers a custom error handler.
+  * Add ``Serializer.data_handler`` decorator that registers data post-processing callbacks.
+  * *Backwards-incompatible*: ``process_data`` method is deprecated. Use the ``data_handler`` decorator instead.
+  * Fix bug that raised error when passing ``extra`` data together with ``many=True``. Thanks :user:`buttsicles` for reporting.
+  * If ``required=True`` validation is violated for a given ``Field``, it will raise an error message that is different from the message specified by the ``error`` argument. Thanks :user:`asteinlein`.
+  * More generic error message raised when required field is missing.
+  * ``validated`` decorator should only wrap a ``Field`` class's ``output`` method.
+
+ -- AlexV <asmodehn@gmail.com>  Sat, 21 Jun 2014 15:00:00 -0000
+
+ros-jade-marshmallow (0.6.0-3vivid) vivid; urgency=high
+
+  * Fix bug in serializing keyed tuple types, e.g. ``namedtuple`` and ``KeyedTuple``.
+  * Nested field can load a serializer by its class name as a string. This makes it easier to implement 2-way nesting.
+  * Make Serializer.data override-able.
+
+ -- AlexV <asmodehn@gmail.com>  Mon, 02 Jun 2014 15:00:00 -0000
+
+ros-jade-marshmallow (0.5.5-3vivid) vivid; urgency=high
+
+  * Add ``Serializer.factory`` for creating a factory function that returns a Serializer instance.
+  * ``MarshallingError`` stores its underlying exception as an instance variable. This is useful for inspecting errors.
+  * ``fields.Select`` is aliased to ``fields.Enum``.
+  * Add ``fields.__all__`` and ``marshmallow.__all__`` so that the modules can be more easily extended.
+  * Expose ``Serializer.OPTIONS_CLASS`` as a class variable so that options defaults can be overridden.
+  * Add ``Serializer.process_data`` hook that allows subclasses to manipulate the final output data.
+
+ -- AlexV <asmodehn@gmail.com>  Thu, 01 May 2014 15:00:00 -0000
+
+ros-jade-marshmallow (0.5.4-3vivid) vivid; urgency=high
+
+  * Add ``json_module`` class Meta option.
+  * Add ``required`` option to fields . Thanks :user:`DeaconDesperado`.
+  * Tested on Python 3.4 and PyPy.
+
+ -- AlexV <asmodehn@gmail.com>  Wed, 16 Apr 2014 15:00:00 -0000
+
+ros-jade-marshmallow (0.5.3-3vivid) vivid; urgency=high
+
+  * Fix ``Integer`` field default. It is now ``0`` instead of ``0.0``. Thanks :user:`kalasjocke`.
+  * Add ``context`` param to ``Serializer``. Allows accessing arbitrary objects in ``Function`` and ``Method`` fields.
+  * ``Function`` and ``Method`` fields raise ``MarshallingError`` if their argument is uncallable.
+
+ -- AlexV <asmodehn@gmail.com>  Sat, 01 Mar 2014 15:00:00 -0000
+
+ros-jade-marshmallow (0.5.2-3vivid) vivid; urgency=high
+
+  * Enable custom field validation via the ``validate`` parameter.
+  * Add ``utils.from_rfc`` for parsing RFC datestring to Python datetime object.
+
+ -- AlexV <asmodehn@gmail.com>  Sun, 09 Feb 2014 15:00:00 -0000
+
+ros-jade-marshmallow (0.5.1-3vivid) vivid; urgency=high
+
+  * Avoid unnecessary attribute access in ``utils.to_marshallable_type`` for improved performance.
+  * Fix RFC822 formatting for localized datetimes.
+
+ -- AlexV <asmodehn@gmail.com>  Sat, 01 Feb 2014 15:00:00 -0000
+
+ros-jade-marshmallow (0.5.0-3vivid) vivid; urgency=high
+
+  * Can customize validation error messages by passing the ``error`` parameter to a field.
+  * *Backwards-incompatible*: Rename ``fields.NumberField`` -> ``fields.Number``.
+  * Add ``fields.Select``. Thanks :user:`ecarreras`.
+  * Support nesting a Serializer within itself by passing ``"self"`` into ``fields.Nested`` (only up to depth=1).
+  * *Backwards-incompatible*: No implicit serializing of collections. Must set ``many=True`` if serializing to a list. This ensures that marshmallow handles singular objects correctly, even if they are iterable.
+  * If Nested field ``only`` parameter is a field name, only return a single value for the nested object (instead of a dict) or a flat list of values.
+  * Improved performance and stability.
+
+ -- AlexV <asmodehn@gmail.com>  Sat, 28 Dec 2013 15:00:00 -0000
+
+ros-jade-marshmallow (0.4.1-3vivid) vivid; urgency=high
+
+  * An object's ``__marshallable__`` method, if defined, takes precedence over ``__getitem__``.
+  * Generator expressions can be passed to a serializer.
+  * Better support for serializing list-like collections (e.g. ORM querysets).
+  * Other minor bugfixes.
+
+ -- AlexV <asmodehn@gmail.com>  Sat, 30 Nov 2013 15:00:00 -0000
+
+ros-jade-marshmallow (0.4.0-3vivid) vivid; urgency=high
+
+  * Add ``additional`` class Meta option.
+  * Add ``dateformat`` class Meta option.
+  * Support for serializing UUID, date, time, and timedelta objects.
+  * Remove ``Serializer.to_data`` method. Just use ``Serialize.data`` property.
+  * String field defaults to empty string instead of ``None``.
+  * *Backwards-incompatible*: ``isoformat`` and ``rfcformat`` functions moved to utils.py.
+  * *Backwards-incompatible*: Validation functions moved to validate.py.
+  * *Backwards-incompatible*: Remove types.py.
+  * Reorder parameters to ``DateTime`` field (first parameter is dateformat).
+  * Ensure that ``to_json`` returns bytestrings.
+  * Fix bug with including an object property in ``fields`` Meta option.
+  * Fix bug with passing ``None`` to a serializer.
+
+ -- AlexV <asmodehn@gmail.com>  Sat, 23 Nov 2013 15:00:00 -0000
+
+ros-jade-marshmallow (0.3.1-3vivid) vivid; urgency=high
+
+  * Fix bug with serializing dictionaries.
+  * Fix error raised when serializing empty list.
+  * Add ``only`` and ``exclude`` parameters to Serializer constructor.
+  * Add ``strict`` parameter and option: causes Serializer to raise an error if invalid data are passed in, rather than storing errors.
+  * Updated Flask + SQLA example in docs.
+
+ -- AlexV <asmodehn@gmail.com>  Fri, 15 Nov 2013 15:00:00 -0000
+
+ros-jade-marshmallow (0.3.0-3vivid) vivid; urgency=high
+
+  * Declaring Serializers just got easier. The *class Meta* paradigm allows you to specify fields more concisely. Can specify ``fields`` and ``exclude`` options.
+  * Allow date formats to be changed by passing ``format`` parameter to ``DateTime`` field constructor. Can either be ``"rfc"`` (default), ``"iso"``, or a date format string.
+  * More useful error message when declaring fields as classes (instead of an instance, which is the correct usage).
+  * Rename MarshallingException -> MarshallingError.
+  * Rename marshmallow.core -> marshmallow.serializer.
+
+ -- AlexV <asmodehn@gmail.com>  Wed, 13 Nov 2013 15:00:00 -0000
+
+ros-jade-marshmallow (0.2.1-3vivid) vivid; urgency=high
+
+  * Allow prefixing field names.
+  * Fix storing errors on Nested Serializers.
+  * Python 2.6 support.
+
+ -- AlexV <asmodehn@gmail.com>  Mon, 11 Nov 2013 15:00:00 -0000
+
+ros-jade-marshmallow (0.2.0-3vivid) vivid; urgency=high
+
+  * Field-level validation.
+  * Add ``fields.Method``.
+  * Add ``fields.Function``.
+  * Allow binding of extra data to a serialized object by passing the ``extra`` param when initializing a ``Serializer``.
+  * Add ``relative`` paramater to ``fields.Url`` that allows for relative URLs.
+
+ -- AlexV <asmodehn@gmail.com>  Sun, 10 Nov 2013 15:00:00 -0000
+
+ros-jade-marshmallow (0.1.0-3vivid) vivid; urgency=high
+
+  * First release.
+
+ -- AlexV <asmodehn@gmail.com>  Sat, 09 Nov 2013 15:00:00 -0000
+
+

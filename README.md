@@ -1,3 +1,26 @@
+## marshmallow (indigo) - 2.9.1-6
+
+The packages in the `marshmallow` repository were released into the `indigo` distro by running `/usr/bin/bloom-release --track indigo --rosdistro indigo marshmallow` on `Fri, 24 Mar 2017 07:50:08 -0000`
+
+The `marshmallow` package was released.
+
+Version of package(s) in repository `marshmallow`:
+
+- upstream repository: https://github.com/marshmallow-code/marshmallow.git
+- release repository: https://github.com/asmodehn/marshmallow-rosrelease.git
+- rosdistro version: `2.9.1-5`
+- old version: `2.9.1-5`
+- new version: `2.9.1-6`
+
+Versions of tools used:
+
+- bloom version: `0.5.25`
+- catkin_pkg version: `0.2.10`
+- rosdep version: `0.11.5`
+- rosdistro version: `0.4.4`
+- vcstools version: `0.1.39`
+
+
 ## marshmallow (jade) - 2.9.1-3
 
 The packages in the `marshmallow` repository were released into the `jade` distro by running `/usr/bin/bloom-release --rosdistro jade --track jade marshmallow` on `Thu, 23 Mar 2017 06:05:26 -0000`
